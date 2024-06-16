@@ -1,2 +1,2 @@
-# Messenger-app-amarya-BE
-Messaging app for internal communication
+# Messenger-Service-Backend
+An insightful canvas app for easing the counselling of the doctors.
