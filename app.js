@@ -2,9 +2,11 @@ import { connectToDatabase } from './config/db_mongo.js';
 import express, { json } from 'express';
 import { config } from 'dotenv';
 import cors from 'cors';
-import https from 'https'; // Import the 'https' module
-import fs from 'fs'; // Import the 'fs' module
+// import https from 'https';
+import {createServer} from 'http'; 
+import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
+import { socketConnection } from './socket.js';
 
 
 const app = express();
@@ -19,22 +21,42 @@ app.use('/', (req, res) => {
   res.send("Hey, I'm online now!!");
 });
 
-// // Connect to the database
-await connectToDatabase();
+// Connect to the database
+try {
+  await connectToDatabase();
+  console.log("Database connected successfully");
+} catch (error) {
+  console.error("Database connection failed:", error);
+}
 
 // SSL/TLS Certificate options
-const sslOptions = {
-  key: fs.readFileSync('private.key'), // Read the private key
-  cert: fs.readFileSync('certificate.crt') // Read the certificate
-};
+let sslOptions = {};
+try {
+  sslOptions = {
+    key: fs.readFileSync('private.key'), 
+    cert: fs.readFileSync('certificate.crt')
+  };
+} catch (error) {
+  console.warn("SSL certificate files not found or cannot be read:", error);
+}
+// const server = https.createServer(sslOptions, app);
+const server = createServer(app);
 
 // Create an HTTPS server with SSL/TLS
 // const port = process.env.PORT || 6060;
-// https.createServer(sslOptions, app).listen(port, () => {
+// const expressServer = https.createServer(sslOptions, app).listen(port, () => {
 //   console.log(`Server is running on port ${port}`);
 // });
 
+
+try {
+  await socketConnection(server);
+  console.log("Socket connected successfully");
+} catch (error) {
+  console.error("Socket connection failed:", error);
+}
+
 const port = process.env.PORT || 6060;
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

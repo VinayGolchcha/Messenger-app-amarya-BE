@@ -2,20 +2,21 @@ import dotenv from "dotenv"
 import {validationResult} from "express-validator"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import mongoose from 'mongoose';
 import { sendMail } from "../../../config/nodemailer.js"
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse } from "../../../utils/response.js"
 import {create, userDetailQuery, insertTokenQuery, insertOtpQuery, getOtpQuery, updateUserPasswordQuery} from "../models/userQuery.js"
+import { uploadMediaQuery } from "../models/mediaQuery.js"
 
 dotenv.config();
 
 export const userInput = async (req, res, next) => {
     try {
         const userData = {
-            username: "Sanjana",
-            email :'sanjana@gmail.com',
+            username: "SanjanaTest",
+            email :'sanjanajain@amaryaconsutlancy.com',
             password: 'sdkjfnlgls',
             is_registered: 1,
-            system_number: "jksdkljopgjjsdpow423235"
         }
         await create(userData)
         return successResponse(res, '', `User In!`);
@@ -57,7 +58,7 @@ export const userLogin = async (req, res, next) => {
             expiresIn: process.env.JWT_EXPIRATION_TIME,
         });
         await insertTokenQuery(token, currentUser._id);
-        return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , is_email_verified: is_email_verified, token: token }, message);
+        return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token }, message);
     } catch (error) {
         next(error);
     }
@@ -73,84 +74,33 @@ export const userLogout = async (req, res, next) => {
     }
 }
 
-export const sendOtpApi = async (req, res, next) => {
+export const uploadFiles = async (req, res, next) => {
     try {
         const errors = validationResult(req);
 
         if (!errors.isEmpty()) {
             return errorResponse(res, errors.array(), "")
         }
-        const { email } = req.body;
-        const otp = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit OTP
-        const otpdata = await insertOtpQuery(email, otp)
-        if (!otpdata) {
-            return errorResponse(res, '', 'Sorry, User not found.');
-        } else {
-            await sendMail(email, `Given below is the otp to verify,\n${otp} \n\n\n\nRegards,\nMessenger App Community`, 'Password Change Verification');
-            return successResponse(res, '', 'OTP for password update has been sent successfully.');
-        }
-    } catch (error) {
-        next(error);
-    }
-}
 
-export const verifyOtpApi= async (req, res, next)=> {
-    try{
-        let { otp, email } = req.body;
-        const errors = validationResult(req);
+        const file = req.file;
+        let {file_type, user_id} = req.body;
 
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
+        user_id = new mongoose.Types.ObjectId(user_id)
+        const files_data = {
+            file_type : file_type,
+            file_name : file.originalname,
+            file_data : file.buffer,
+            uploaded_by: user_id
         }
-        otp = parseInt(otp, 10);
-        const user_otp = await getOtpQuery(email);
-        if (otp === user_otp.otp) {
-            return successResponse(res, { email: email}, 'OTP verified successfully.');
-        } else {
-            return errorResponse(res, '', 'Invalid OTP');
+        const data = await uploadMediaQuery(files_data)
+        const response = {
+            _id: data._id,
+            file_type: data.file_type,
+            file_name: data.file_name,
+            uploaded_by:data.uploaded_by,
+            uploaded_at:data.uploaded_at,
         }
-    } catch (error) {
-        next(error);
-    }
-}
-
-export const updateUserPassword = async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
-        }
-        const {email, password, confirm_password} = req.body;
-
-        let user_data = await userDetailQuery(email);
-        if (!user_data) {
-            return errorResponse(res, '', 'User not found');
-        }
-        if (password === confirm_password) {
-            const password_hash = await bcrypt.hash(password.toString(), 12);
-            await updateUserPasswordQuery(email, password_hash);
-            return successResponse(res,"", 'User password updated successfully');
-        } else {
-            return errorResponse(res, '', 'Password and confirm password must be same, please try again.');
-        }
-    } catch (error) {
-        next(error);
-    }
-}
-
-export const checkEmailVerification = async (req, res, next) => {
-    try {
-        const { email } = req.body;
-        const errors = validationResult(req);
-
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
-        }
-        let user_data = await userDetailQuery(email);
-        if (!user_data) {
-            return errorResponse(res, '', 'User not found');
-        }
-        return successResponse(res, { is_email_verified: user_data.is_email_verified }, 'Email verification status.');
+        return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
         next(error);
     }
