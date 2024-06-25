@@ -180,7 +180,7 @@ export const deleteChats = async (req, res, next) => {
         }
 
         const { messageId } = req.body;
-        const userId = req.user.id; // Assuming user ID is available in the request
+        const userId = req.user.id; 
 
         // Find the message
         const message = await MessageModel.findById(messageId);

@@ -2,12 +2,10 @@ import { connectToDatabase } from './config/db_mongo.js';
 import express, { json } from 'express';
 import { config } from 'dotenv';
 import cors from 'cors';
-// import https from 'https';
-import {createServer} from 'http'; 
+import { createServer } from 'http';
 import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
 import { socketConnection } from './socket.js';
-
 
 const app = express();
 config();
@@ -39,24 +37,19 @@ try {
 } catch (error) {
   console.warn("SSL certificate files not found or cannot be read:", error);
 }
-// const server = https.createServer(sslOptions, app);
+
+// Create HTTP or HTTPS server
 const server = createServer(app);
 
-// Create an HTTPS server with SSL/TLS
-// const port = process.env.PORT || 6060;
-// const expressServer = https.createServer(sslOptions, app).listen(port, () => {
-//   console.log(`Server is running on port ${port}`);
-// });
-
-
+// Initialize Socket.IO
 try {
-  await socketConnection(server);
+  socketConnection(server);  // Make sure this function doesn't need to be awaited
   console.log("Socket connected successfully");
 } catch (error) {
   console.error("Socket connection failed:", error);
 }
 
-const port = process.env.PORT || 6060;
+const port = process.env.PORT || 6061;
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
