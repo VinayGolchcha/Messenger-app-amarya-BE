@@ -4,7 +4,7 @@ const router = Router();
 
 import multer from 'multer';
 import authenticateToken from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles,deleteChats} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages,deleteChats} from '../controllers/userController.js';
 import {createGroup} from '../controllers/groupController.js';
 import {login, updatePassword, sendOtp, verifyOtp} from '../../../utils/validation.js';
 
@@ -20,7 +20,10 @@ app.get('/logout/:id', userLogout);
 app.post('/create-group', createGroup);
 
 //message APIS
-app.post('/upload-file', upload.single('file'), uploadFiles)
+app.post('/upload-file', upload.single('file'), uploadFiles);
+app.get('/fetch-all-contacts', fetchAllContacts);
+app.post('/search-in-contacts', searchInContacts);
+app.post('/search-in-messages', searchInMessages);
 
 app.use("/", router);
 app.post('/deleteChats',deleteChats);
