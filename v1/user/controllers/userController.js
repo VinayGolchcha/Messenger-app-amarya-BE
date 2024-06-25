@@ -22,7 +22,7 @@ export const userInput = async (req, res) => {
         await create(userData)
         return successResponse(res, '', `User In!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -61,7 +61,7 @@ export const userLogin = async (req, res) => {
         await insertTokenQuery(token, currentUser._id);
         return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token }, message);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 };
 
@@ -71,7 +71,7 @@ export const userLogout = async (req, res) => {
         await insertTokenQuery("", user_id);
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -103,7 +103,7 @@ export const uploadFiles = async (req, res) => {
         }
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -117,7 +117,7 @@ export const fetchAllContacts = async (req, res) => {
         const data = await findAllUserDetailQuery();
         return successResponse(res, data, `All contacts fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -134,7 +134,7 @@ export const searchInContacts = async (req, res) => {
         const data = await findUserByNameQuery(search_text);
         return successResponse(res, data, `Contact fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -153,6 +153,6 @@ export const searchInMessages = async (req, res) => {
         const data = await findMessageQuery(senders_id, recievers_id, search_text);
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
