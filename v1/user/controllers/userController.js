@@ -5,15 +5,16 @@ import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { sendMail } from "../../../config/nodemailer.js"
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse } from "../../../utils/response.js"
-import {create, userDetailQuery, insertTokenQuery, insertOtpQuery, getOtpQuery, updateUserPasswordQuery} from "../models/userQuery.js"
-import { uploadMediaQuery } from "../models/mediaQuery.js"
+import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery} from "../models/userQuery.js"
+import { uploadMediaQuery } from "../models/mediaQuery.js";
+import {findMessageQuery} from "../models/messageQuery.js";
 
 dotenv.config();
 
-export const userInput = async (req, res, next) => {
+export const userInput = async (req, res) => {
     try {
         const userData = {
-            username: "SanjanaTest",
+            username: "sanjanatest",
             email :'sanjanajain@amaryaconsutlancy.com',
             password: 'sdkjfnlgls',
             is_registered: 1,
@@ -25,7 +26,7 @@ export const userInput = async (req, res, next) => {
     }
 }
 
-export const userLogin = async (req, res, next) => {
+export const userLogin = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -64,7 +65,7 @@ export const userLogin = async (req, res, next) => {
     }
 };
 
-export const userLogout = async (req, res, next) => {
+export const userLogout = async (req, res) => {
     try {
         const user_id = req.params.id;
         await insertTokenQuery("", user_id);
@@ -74,7 +75,7 @@ export const userLogout = async (req, res, next) => {
     }
 }
 
-export const uploadFiles = async (req, res, next) => {
+export const uploadFiles = async (req, res) => {
     try {
         const errors = validationResult(req);
 
@@ -101,6 +102,56 @@ export const uploadFiles = async (req, res, next) => {
             uploaded_at:data.uploaded_at,
         }
         return successResponse(res, response, `File uploaded successfully!`);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const fetchAllContacts = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+        const data = await findAllUserDetailQuery();
+        return successResponse(res, data, `All contacts fetched successfully!`);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const searchInContacts = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let {search_text} = req.body;
+        search_text = search_text.toLowerCase();
+        const data = await findUserByNameQuery(search_text);
+        return successResponse(res, data, `Contact fetched successfully!`);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const searchInMessages = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let {senders_id, recievers_id, search_text} = req.body;
+        senders_id = new mongoose.Types.ObjectId(senders_id)
+        recievers_id = new mongoose.Types.ObjectId(recievers_id)
+        search_text = search_text.toLowerCase();
+        const data = await findMessageQuery(senders_id, recievers_id, search_text);
+        return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         next(error);
     }

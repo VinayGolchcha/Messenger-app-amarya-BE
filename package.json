@@ -4,7 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "start": "cross-env DEBUG=socket.io* node app.js"
+    "start": "nodemon app.js",
+    "start-env": "cross-env DEBUG=socket.io* node app.js"
   },
   "author": "",
   "license": "ISC",
