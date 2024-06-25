@@ -4,7 +4,7 @@ const router = Router();
 
 import multer from 'multer';
 import authenticateToken from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles,deleteChats} from '../controllers/userController.js';
 import {createGroup} from '../controllers/groupController.js';
 import {login, updatePassword, sendOtp, verifyOtp} from '../../../utils/validation.js';
 
@@ -23,5 +23,6 @@ app.post('/create-group', createGroup);
 app.post('/upload-file', upload.single('file'), uploadFiles)
 
 app.use("/", router);
+app.post('/deleteChats',deleteChats);
 
 export default app;

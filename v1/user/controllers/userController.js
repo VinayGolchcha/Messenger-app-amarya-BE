@@ -23,6 +23,18 @@ export const userInput = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+    try {
+        const userData = {
+            username: "aditya122",
+            email :'adityachauhan@amaryaconsutlancy.com',
+            password: 'sdkjfnlgls',
+            is_registered: 1,
+        }
+        await create(userData)
+        return successResponse(res, '', `User In!`);
+    } catch (error) {
+        next(error);
+    }
 }
 
 export const userLogin = async (req, res, next) => {
@@ -105,3 +117,55 @@ export const uploadFiles = async (req, res, next) => {
         next(error);
     }
 }
+
+export const deleteChats = async (req, res, next) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.status(400).json({
+                success:false,
+                message:"Error in validation"
+            })
+        }
+
+        const { messageId } = req.body;
+        const userId = req.user.id; // Assuming user ID is available in the request
+
+        // Find the message
+        const message = await MessageModel.findById(messageId);
+
+        if (!message) {
+            res.status(400).json({
+                success:false,
+                message:"Message not found"
+            })
+        }
+
+        // Check if the user is either the sender or the receiver
+        if (message.senders_id.toString() != userId && message.receivers_id.toString() != userId) {
+            res.status(400).json({
+                success:false,
+                message:"you are not authorized"
+            })
+        }
+
+        // Mark the message as deleted for the sender or receiver
+        if (message.senders_id.toString() == userId) {
+            await MessageModel.findByIdAndUpdate(messageId, { $set: { senders_deleted: true } });
+        } else if (message.receivers_id.toString() == userId) {
+            await MessageModel.findByIdAndUpdate(messageId, { $set: { receivers_deleted: true } });
+        }
+
+        // Check if both sender and receiver have deleted the message, then remove it
+        if (message.senders_deleted && message.receivers_deleted) {
+            await MessageModel.findByIdAndDelete(messageId);
+        }
+
+        return res.status(200).json({
+            success:"True",
+            message:"message deleted successfully"
+        })
+    } catch (error) {
+        next(error);
+    }
+};
