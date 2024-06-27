@@ -14,5 +14,6 @@ const MessageSchema = new mongoose.Schema({
 });
 
 MessageSchema.plugin(timestamps);
+MessageSchema.index({ senders_id: 1, sent_at: -1 });
 
 export const MessageModel = mongoose.model("Messages", MessageSchema);

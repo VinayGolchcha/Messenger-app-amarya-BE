@@ -5,24 +5,24 @@ import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { sendMail } from "../../../config/nodemailer.js"
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse } from "../../../utils/response.js"
-import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery} from "../models/userQuery.js"
+import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
-import {findMessageQuery} from "../models/messageQuery.js";
+import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery} from "../models/messageQuery.js";
 
 dotenv.config();
 
 export const userInput = async (req, res) => {
     try {
         const userData = {
-            username: "sanjanatest",
-            email :'sanjanajain@amaryaconsutlancy.com',
+            username: "shubham",
+            email :"shubham@yahoo.com",
             password: 'sdkjfnlgls',
             is_registered: 1,
         }
         await create(userData)
         return successResponse(res, '', `User In!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -61,17 +61,18 @@ export const userLogin = async (req, res) => {
         await insertTokenQuery(token, currentUser._id);
         return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token }, message);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 };
 
 export const userLogout = async (req, res) => {
     try {
         const user_id = req.params.id;
+        console.log(req.decoded)
         await insertTokenQuery("", user_id);
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -84,7 +85,8 @@ export const uploadFiles = async (req, res) => {
         }
 
         const file = req.file;
-        let {file_type, user_id} = req.body;
+        let file_type = req.body.file_type
+        let user_id = req.body.user_id;
 
         user_id = new mongoose.Types.ObjectId(user_id)
         const files_data = {
@@ -103,7 +105,7 @@ export const uploadFiles = async (req, res) => {
         }
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -117,7 +119,7 @@ export const fetchAllContacts = async (req, res) => {
         const data = await findAllUserDetailQuery();
         return successResponse(res, data, `All contacts fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -134,7 +136,7 @@ export const searchInContacts = async (req, res) => {
         const data = await findUserByNameQuery(search_text);
         return successResponse(res, data, `Contact fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
     }
 }
 
@@ -146,13 +148,48 @@ export const searchInMessages = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        let {senders_id, recievers_id, search_text} = req.body;
-        senders_id = new mongoose.Types.ObjectId(senders_id)
+        let {user_id, recievers_id, search_text} = req.body;
+        user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
         search_text = search_text.toLowerCase();
-        const data = await findMessageQuery(senders_id, recievers_id, search_text);
+        const data = await findMessageQuery(user_id, recievers_id, search_text);
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
-        next(error);
+        console.error(error);
+    }
+}
+
+export const fetchChatHistory = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let {user_id, recievers_id, date} = req.body;
+        user_id = new mongoose.Types.ObjectId(user_id)
+        recievers_id = new mongoose.Types.ObjectId(recievers_id)
+        const data = await fetchChatHistoryQuery(user_id, recievers_id);
+        return successResponse(res, data, `Messages fetched successfully!`);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+export const fetchNewMessages = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let user_id = req.params.user_id;
+        user_id = new mongoose.Types.ObjectId(user_id)
+        const data = await fetchNewMessagesForUserQuery(user_id);
+        return successResponse(res, data, `Messages fetched successfully!`);
+    } catch (error) {
+        console.error(error);
     }
 }

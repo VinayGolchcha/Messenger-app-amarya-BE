@@ -5,10 +5,12 @@ export const successResponse = (res, data, message = 'Success', statusCode = 200
 export const notFoundResponse = (res, data, message = 'Not Found', statusCode = 404) => {
     return res.status(statusCode).json({ success: false, message, data });
 };
-export const unAuthorizedResponse = (res, data, message = 'Not Found', statusCode = 401) => {
+
+export const unAuthorizedResponse = (res, data, message = 'Unauthorized Response', statusCode = 401) => {
     return res.status(statusCode).json({ success: false, message, data });
 };
-export const errorResponse = (res, errors, message = 'Not Found', statusCode = 400) => {
+
+export const errorResponse = (res, errors, message = 'Error Occured', statusCode = 400) => {
     return res.status(statusCode).json({ success: false, message, errors });
 };
 
