@@ -60,7 +60,7 @@ export const socketConnection = async(server)=>{
           const user = await userGroupDetailQuery(socket.id, user_id, group_name)
           console.log(user)
           // join room
-          if (user) {
+          if (user.length > 0) {
             socket.join(user[0].group_name)
             socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
             socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`)) //broadcast to everyone in the room
@@ -73,7 +73,7 @@ export const socketConnection = async(server)=>{
           const user = await userGroupDetailQuery(socket.id, user_id, group_name)
           console.log(user)
           // leave room
-          if (user) {
+          if (user.length > 0) {
             socket.leave(user[0].group_name)
             socket.emit('message', buildMsg(user[0]._id, user[0].username, `You have left the ${user[0].group_name} chat room`))
             socket.broadcast.to(user[0].group_name).emit('message', buildMsg('',user[0].username, `${user[0].username} has left the room`))

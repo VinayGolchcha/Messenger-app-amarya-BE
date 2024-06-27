@@ -10,6 +10,12 @@ export const userDetailQuery = async (email) => {
     .lean();
 }
 
+export const userDataQuery = async (id) => {
+    let object_id = new mongoose.Types.ObjectId(id);
+    return await UserModel.findOne({ '_id': object_id, 'is_registered': true })
+    .lean();
+}
+
 export const insertTokenQuery = async (token, id) => {
     return await UserModel.findOneAndUpdate({ _id: id, is_registered: true }, { $set: { "auth_token": token } }, { safe: true, upsert: false, new: false });
 }

@@ -3,8 +3,9 @@ import dotenv from "dotenv"
 dotenv.config();
 import { notFoundResponse, unAuthorizedResponse } from '../utils/response.js';
 
-const authenticateToken = async (req, res, next) => {
+export const authenticateToken = async (req, res, next) => {
     let token = req.body.token || req.params.token || req.headers['x-access-token'] || req.headers['authorization'] || req.headers['Authorization'];
+    let user_id = req.body.user_id || req.params.user_id
     if (!token) {
         return unAuthorizedResponse(res, "", "Please send token in payload or x-access-token header or authorization header.");
     }
@@ -19,7 +20,11 @@ const authenticateToken = async (req, res, next) => {
                     return notFoundResponse(res, err, `JWT has expired`);;
                 } else {
                     req.decoded = decoded;
-                    next();
+                    if (decoded.id === user_id){
+                        next();
+                    }else{
+                        return unAuthorizedResponse(res, '', `The provided token does not match the given user id.`)
+                    }
                 }
             }
         });
@@ -28,4 +33,3 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
-export default authenticateToken;
