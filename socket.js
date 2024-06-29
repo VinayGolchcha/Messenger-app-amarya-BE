@@ -1,6 +1,7 @@
 import { Server } from "socket.io"
 import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery} from "./v1/user/models/userQuery.js"
 import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
+import { addGroupMessageQuery, getGroupDataQuery } from "./v1/user/models/groupQuery.js"
 
 
 export const socketConnection = async(server)=>{
@@ -53,10 +54,20 @@ export const socketConnection = async(server)=>{
           await markAsReadQuery(message_id);
         });
 
-        socket.on('groupMessage', async({group_name, message}) => {
+        socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
           console.log('message received: ', message);
           const user = await findUserDetailQuery(socket.id)
+          const group_id = await getGroupDataQuery(group_name)
           io.to(group_name).emit('message', buildMsg(user._id, user.username, message))
+
+          const message_data = {
+            group_id: group_id._id,
+            senders_id: user._id,
+            message_type: message_type,
+            content: message,
+            media_id: media_id ? media_id : null 
+          }
+          await addGroupMessageQuery(message_data)
         });
 
         socket.on('enterGroup', async ({ user_id, group_name }) => {

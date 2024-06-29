@@ -15,4 +15,4 @@ GroupMessageSchema.plugin(timestamps);
 GroupMessageSchema.index({ "senders_id": 1 }, { name: "sender's id for data" });
 GroupMessageSchema.index({ "group_id": 1 }, { name: "group id for data" });
 
-export const GroupMessageModel = mongoose.model("Messages", GroupMessageSchema);
+export const GroupMessageModel = mongoose.model("GroupMessages", GroupMessageSchema);
