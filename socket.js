@@ -33,9 +33,12 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("privateMessage", async({ message, reciever_socket_id, message_type, media_id }) => {
+          const recipient_socket = io.sockets.sockets.get(reciever_socket_id);
           const sender_data = await findUserDetailQuery(socket.id)
           const reciever_data = await findUserDetailQuery(reciever_socket_id)
-          socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message));
+          if (recipient_socket){
+            socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message));
+          }
           const message_data = {
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,

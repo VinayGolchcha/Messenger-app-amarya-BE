@@ -4,7 +4,7 @@ dotenv.config();
 import { notFoundResponse, unAuthorizedResponse } from '../utils/response.js';
 
 export const authenticateToken = async (req, res, next) => {
-    let token = req.body.token || req.params.token || req.headers['x-access-token'] || req.headers['authorization'] || req.headers['Authorization'];
+    let token = req.cookies.token
     let user_id = req.body.user_id || req.params.user_id
     if (!token) {
         return unAuthorizedResponse(res, "", "Please send token in payload or x-access-token header or authorization header.");
@@ -32,4 +32,3 @@ export const authenticateToken = async (req, res, next) => {
         next(error);
     }
 };
-

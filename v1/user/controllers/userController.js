@@ -59,7 +59,8 @@ export const userLogin = async (req, res) => {
             expiresIn: process.env.JWT_EXPIRATION_TIME,
         });
         await insertTokenQuery(token, currentUser._id);
-        return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token }, message);
+        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token, socket_id: currentUser.socket_id }, message);
     } catch (error) {
         console.error(error);
     }
@@ -170,7 +171,7 @@ export const fetchChatHistory = async (req, res) => {
         let {user_id, recievers_id, date} = req.body;
         user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
-        const data = await fetchChatHistoryQuery(user_id, recievers_id);
+        const data = await fetchChatHistoryQuery(user_id, recievers_id, date);
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);

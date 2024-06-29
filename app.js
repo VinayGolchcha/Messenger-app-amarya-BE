@@ -2,6 +2,7 @@ import { connectToDatabase } from './config/db_mongo.js';
 import express, { json } from 'express';
 import { config } from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 // import https from 'https';
 import {createServer} from 'http'; 
 import fs from 'fs';
@@ -12,6 +13,7 @@ import { socketConnection } from './socket.js';
 const app = express();
 config();
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // Import & Define API versions

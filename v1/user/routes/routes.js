@@ -17,7 +17,7 @@ app.post('/user-input', userInput);
 app.get('/logout/:user_id', authenticateToken, userLogout);
 
 //group APIs
-app.post('/create-group', createGroup);
+app.post('/create-group', authenticateToken, createGroup);
 
 //message APIS
 app.post('/upload-file', upload.single('file'), authenticateToken, uploadFiles);
