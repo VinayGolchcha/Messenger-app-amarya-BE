@@ -8,33 +8,38 @@ const passwordValidation = (value) => {
     return true;
 };
 
-export const register = [
-    body('username').isLength({ min: 3, max: 30 }).withMessage('Username name must be between 3 and 30 characters'),
+export const loginVal = [
     body('email').isEmail().withMessage('Invalid email input.').notEmpty().withMessage('Email cannot be empty.'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long').notEmpty().withMessage('Password cannot be empty.').custom(passwordValidation),
-    body('system_number').notEmpty().withMessage('System Number cannot be empty.').isString().withMessage('System Number should be a string.')
+    body('password').notEmpty().withMessage('Password cannot be empty.').custom(passwordValidation)
 ]
 
-export const login = [
-    body('email').isEmail().withMessage('Invalid email input.').notEmpty().withMessage('Email cannot be empty.'),
-    body('password').notEmpty().withMessage('Password cannot be empty.')
+export const createGroupVal = [
+    body('group_name').isString().withMessage('Group name must be a string').notEmpty().withMessage('Group name cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('members').isArray().withMessage('Members must be a array').notEmpty().withMessage('Members cannot be empty.')
 ]
 
-export const updatePassword = [
-    body('email').isEmail().withMessage('Invalid email input.').notEmpty().withMessage('Email cannot be empty.'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long').notEmpty().withMessage('Password cannot be empty.').custom(passwordValidation),
-    body('confirm_password').custom((value, { req }) => {
-        if (value !== req.body.password) {
-            throw new Error('Passwords do not match');
-        }
-        return true;
-    })
+export const uploadFileVal = [
+    body('file_type').isString().withMessage('File type must be a string').notEmpty().withMessage('File type cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
 ]
 
-export const sendOtp = [
-    body('email').isEmail().withMessage('Invalid email input.').notEmpty().withMessage('Email cannot be empty.')
+export const searchVal = [
+    body('search_text').isString().withMessage('Search text must be a string').notEmpty().withMessage('Search text cannot be empty.')
 ]
-export const verifyOtp = [
-    body('email').isEmail().withMessage('Invalid email input.').notEmpty().withMessage('Email cannot be empty.'),
-    body('otp').isNumeric().withMessage('Invalid otp input.').notEmpty().withMessage('otp cannot be empty.')
+
+export const searchInChatVal = [
+    body('search_text').isString().withMessage('Search text must be a string').notEmpty().withMessage('Search text cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.')
+]
+
+export const fetchChatVal = [
+    body('date').isString().withMessage('Date must be a string').notEmpty().withMessage('Date cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.')
+]
+
+export const newMessageVal = [
+    param('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
 ]
