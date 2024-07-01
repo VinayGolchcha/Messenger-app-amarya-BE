@@ -1,4 +1,4 @@
-import { body, query, check } from 'express-validator';
+import { body, query, check, param } from 'express-validator';
 
 
 const passwordValidation = (value) => {

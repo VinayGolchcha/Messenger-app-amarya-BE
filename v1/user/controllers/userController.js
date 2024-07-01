@@ -3,7 +3,6 @@ import {validationResult} from "express-validator"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
-import { sendMail } from "../../../config/nodemailer.js"
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse } from "../../../utils/response.js"
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
@@ -13,16 +12,40 @@ dotenv.config();
 
 export const userInput = async (req, res) => {
     try {
-        const userData = {
-            username: "shubham",
-            email :"shubham@yahoo.com",
-            password: 'sdkjfnlgls',
+        const userData = [{
+            username: "Sanjana",
+            email: "sanjana@yahoo.com",
+            password: '$2b$12$Bb2hulXzeapnkrFNfDl5SOL7Xd0lAXo9SrolmQ5.KHtsIk1EKOiqS',
             is_registered: 1,
+        }, {
+            username: "Ashu",
+            email: "ashu@yahoo.com",
+            password: '$2b$12$Bb2hulXzeapnkrFNfDl5SOL7Xd0lAXo9SrolmQ5.KHtsIk1EKOiqS',
+            is_registered: 1
+        },
+        {
+            username: "Prabal",
+            email: "prabal@yahoo.com",
+            password: '$2b$12$Bb2hulXzeapnkrFNfDl5SOL7Xd0lAXo9SrolmQ5.KHtsIk1EKOiqS',
+            is_registered: 1,
+        }, {
+            username: "Aditya",
+            email: "aditya@yahoo.com",
+            password: '$2b$12$Bb2hulXzeapnkrFNfDl5SOL7Xd0lAXo9SrolmQ5.KHtsIk1EKOiqS',
+            is_registered: 1,
+        }, {
+            username: "Rashi",
+            email: "rashi@yahoo.com",
+            password: '$2b$12$Bb2hulXzeapnkrFNfDl5SOL7Xd0lAXo9SrolmQ5.KHtsIk1EKOiqS',
+            is_registered: 1,
+        }]
+        for(let i = 0; i < userData.length; i++) {
+            await create(userData[i])
         }
-        await create(userData)
         return successResponse(res, '', `User In!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -63,6 +86,7 @@ export const userLogin = async (req, res) => {
         return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token, socket_id: currentUser.socket_id }, message);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 };
 
@@ -74,6 +98,7 @@ export const userLogout = async (req, res) => {
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -107,6 +132,7 @@ export const uploadFiles = async (req, res) => {
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -121,6 +147,7 @@ export const fetchAllContacts = async (req, res) => {
         return successResponse(res, data, `All contacts fetched successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -138,6 +165,7 @@ export const searchInContacts = async (req, res) => {
         return successResponse(res, data, `Contact fetched successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -157,6 +185,7 @@ export const searchInMessages = async (req, res) => {
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -175,6 +204,7 @@ export const fetchChatHistory = async (req, res) => {
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }
 
@@ -192,5 +222,6 @@ export const fetchNewMessages = async (req, res) => {
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error)
     }
 }

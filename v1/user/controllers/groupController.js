@@ -34,5 +34,6 @@ export const createGroup = async (req, res) => {
         return successResponse(res, is_group, `Group created successfully`);
     } catch (error) {
         console.error(error);
+        return internalServerErrorResponse(res, error);
     }
 }
