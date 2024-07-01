@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 import {validationResult} from "express-validator"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse } from "../../../utils/response.js"
+import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
 import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
 
