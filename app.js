@@ -15,15 +15,16 @@ config();
 app.use(express.json());
 app.use(cookieParser());
 //CORS setup
-const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
+// const corsOptions = {
+//   origin: '*',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+// };
 
-app.use(cors(corsOptions));
-// Preflight request handling
-app.options('*', cors(corsOptions));
+// app.use(cors(corsOptions));
+// // Preflight request handling
+// app.options('*', cors(corsOptions));
+app.use(cors({ origin: true, credentials: true }))
 
 app.use(express.urlencoded({ extended: true }));
 // Import & Define API versions
