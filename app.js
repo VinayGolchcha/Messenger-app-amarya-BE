@@ -14,7 +14,7 @@ const app = express();
 config();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+// app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // Import & Define API versions
 app.use('/api/v1', routes);
