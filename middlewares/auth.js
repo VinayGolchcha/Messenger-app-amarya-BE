@@ -7,7 +7,7 @@ export const authenticateToken = async (req, res, next) => {
     let token = req.cookies.token
     let user_id = req.body.user_id || req.params.user_id
     if (!token) {
-        return unAuthorizedResponse(res, "", "Please send token in payload or x-access-token header or authorization header.");
+        return unAuthorizedResponse(res, "", "Token not found in cookies");
     }
     try {
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {

@@ -29,6 +29,8 @@ export const socketConnection = async(server)=>{
         console.log('a user connected', socket.user_email);
         await updateSocketId(socket.user_email, socket.id)
         
+        socket.emit('session', { socketId: socket.id });
+
         socket.onAny((event, ...args) => {
           console.log(event, args);
         });
