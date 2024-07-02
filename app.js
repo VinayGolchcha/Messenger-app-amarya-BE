@@ -12,21 +12,20 @@ import { socketConnection } from './socket.js';
 
 const app = express();
 config();
+// Middleware setup
 app.use(express.json());
-app.use(cookieParser());
-//CORS setup
-// const corsOptions = {
-//   origin: '*',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-// };
-
-// app.use(cors(corsOptions));
-// // Preflight request handling
-// app.options('*', cors(corsOptions));
-app.use(cors({ origin: true, credentials: true }))
-
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// CORS setup
+const corsOptions = {
+  origin: 'http://localhost:3000', // replace with your client URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
 // Import & Define API versions
 app.use('/api/v1', routes);
 
