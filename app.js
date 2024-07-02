@@ -9,9 +9,12 @@ import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
 import { socketConnection } from './socket.js';
 
+
 const app = express();
 config();
-
+app.use(express.json());
+app.use(cookieParser());
+//CORS setup
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -22,8 +25,6 @@ app.use(cors(corsOptions));
 // Preflight request handling
 app.options('*', cors(corsOptions));
 
-app.use(express.json());
-app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 // Import & Define API versions
 app.use('/api/v1', routes);
