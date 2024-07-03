@@ -82,7 +82,7 @@ export const userLogin = async (req, res) => {
             expiresIn: process.env.JWT_EXPIRATION_TIME,
         });
         await insertTokenQuery(token, currentUser._id);
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        res.cookie('token', token);
         return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token, socket_id: currentUser.socket_id }, message);
     } catch (error) {
         console.error(error);

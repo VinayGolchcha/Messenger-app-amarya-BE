@@ -19,6 +19,7 @@ app.use(cookieParser());
 
 // CORS setup
 const corsOptions = {
+  origin: 'http://localhost:3000', // replace with your client URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 };
