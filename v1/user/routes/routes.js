@@ -4,9 +4,9 @@ const router = Router();
 
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages} from '../controllers/userController.js';
 import {createGroup} from '../controllers/groupController.js';
-import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal } from '../../../utils/validation.js';
+import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal } from '../../../utils/validation.js';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -26,6 +26,7 @@ app.post('/search-in-contacts/:user_id', authenticateToken, searchVal,  searchIn
 app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMessages);
 app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistory);
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
+app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
 app.use("/", router);
 

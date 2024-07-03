@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
-import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery} from "../models/messageQuery.js";
+import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery} from "../models/messageQuery.js";
 
 dotenv.config();
 
@@ -243,7 +243,7 @@ export const deleteMessages = async (req, res) => {
             const is_user = await checkUserForGivenMessageQuery(user_id, message_id)
 
             if (is_user) {
-                const is_user_sender = new mongoose.Types.ObjectId(is_user.senders_id) == user_id;
+                const is_user_sender = is_user.senders_id.toString() == user_id.toString() ? true: false;
                 await updateDeleteStatusForUserQuery(is_user_sender, message_id)
                 message = `Message deleted successfully`
                 return message
@@ -268,15 +268,27 @@ export const deleteMessages = async (req, res) => {
             user_id = new mongoose.Types.ObjectId(user_id)
             const is_deleted = await updateDeleteStatusForAllMessagesInChatQuery(user_id)
 
-            if (is_deleted) {
+            if (is_deleted.modifiedCount > 0) {
                 message = `Message deleted successfully`
                 return message
             }
-            message = `No message with that id found`
+            message = `No messages found`
             return message
         }
 
-        return successResponse(res, data, `Messages fetched successfully!`);
+        switch(action){
+            case 'deleteForMe': 
+                await deleteForMe()
+                break;
+            case 'deleteForEveryone': 
+                await deleteForEveryone()
+                break;
+            case 'deleteChat': 
+                await deleteChat();
+                break;
+        }
+
+        return successResponse(res, '', message);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

@@ -113,7 +113,7 @@ export const fetchNewMessagesForUserQuery = async(user_id) => {
 
 export const checkUserForGivenMessageQuery = async(user_id, message_id) => {
     try {
-        return await MessageModel.find({
+        return await MessageModel.findOne({
             _id: message_id,
             $or: [
                 { recievers_id: user_id },
@@ -150,7 +150,7 @@ export const deleteMessageByIdQuery = async(message_id) => {
 
 export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id) => {
     try {
-        return await MessageModel.findOneAndUpdate(user_id, { sender_deleted: true }, { safe: true, upsert: true, new: false });
+        return await MessageModel.updateMany({senders_id: user_id}, { sender_deleted: true }, { safe: true, upsert: true, new: false });
     } catch (error) {
         console.error('Error finding updateDeleteStatusForAllMessagesInChatQuery details:', error);
         throw error;

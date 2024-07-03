@@ -40,6 +40,11 @@ export const fetchChatVal = [
     body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.')
 ]
 
+export const deleteChatVal = [
+    body('action').isString().withMessage('Action must be a string').notEmpty().withMessage('Action cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
+]
+
 export const newMessageVal = [
     param('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
 ]
