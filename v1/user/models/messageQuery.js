@@ -16,7 +16,7 @@ export const markAsReadQuery = async (id) => {
 
 export const findMessageQuery = async(senders_id, recievers_id, search_text) => {
     try {
-        return await MessageModel.find({senders_id: senders_id, recievers_id: recievers_id, content: { $regex: search_text, $options: 'i' } }).select('senders_id recievers_id content message_type media_id sent_at');
+        return await MessageModel.find({senders_id: senders_id, recievers_id: recievers_id, content: { $regex: search_text, $options: 'i' }, sender_deleted: false}).select('senders_id recievers_id content message_type media_id sent_at');
     } catch (error) {
         console.error('Error finding findMessageQuery details:', error);
         throw error;
@@ -42,7 +42,8 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                             { senders_id: senders_id, recievers_id: recievers_id },
                             { senders_id: recievers_id, recievers_id: senders_id }
                         ],
-                        sent_at: { $gte: currentStartDate, $lt: new Date(given_date.setDate(given_date.getDate() + 1)) }
+                        sent_at: { $gte: currentStartDate, $lt: new Date(given_date.setDate(given_date.getDate() + 1)) },
+                        sender_deleted: false
                     }
                 },
                 {
@@ -103,9 +104,55 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
 
 export const fetchNewMessagesForUserQuery = async(user_id) => {
     try {
-        return await MessageModel.find({ recievers_id: user_id, is_new: true }).select('senders_id recievers_id content message_type media_id sent_at');
+        return await MessageModel.find({ recievers_id: user_id, is_new: true, reciever_deleted: false }).select('senders_id recievers_id content message_type media_id sent_at');
     } catch (error) {
         console.error('Error finding fetchNewMessagesForUserQuery details:', error);
+        throw error;
+    }
+}
+
+export const checkUserForGivenMessageQuery = async(user_id, message_id) => {
+    try {
+        return await MessageModel.find({
+            _id: message_id,
+            $or: [
+                { recievers_id: user_id },
+                { senders_id: user_id }
+            ]
+        }).select('senders_id recievers_id content message_type media_id sent_at');
+    } catch (error) {
+        console.error('Error finding checkUserForGivenMessageQuery details:', error);
+        throw error;
+    }
+}
+
+export const updateDeleteStatusForUserQuery = async (is_user_sender, id) => {
+    try {
+        if(is_user_sender == true){
+            return await MessageModel.findByIdAndUpdate(id, { sender_deleted: true }, { safe: true, upsert: true, new: false });
+        }else{
+            return await MessageModel.findByIdAndUpdate(id, { reciever_deleted: true }, { safe: true, upsert: true, new: false });
+        }
+    } catch (error) {
+        console.error('Error finding updateDeleteStatusForUserQuery details:', error);
+        throw error;
+    }
+}
+
+export const deleteMessageByIdQuery = async(message_id) => {
+    try {
+        return await MessageModel.deleteOne({ _id: new mongoose.Types.ObjectId(message_id) });
+    } catch (error) {
+        console.error('Error finding deleteMessageByIdQuery details:', error);
+        throw error;
+    }
+}
+
+export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id) => {
+    try {
+        return await MessageModel.findOneAndUpdate(user_id, { sender_deleted: true }, { safe: true, upsert: true, new: false });
+    } catch (error) {
+        console.error('Error finding updateDeleteStatusForAllMessagesInChatQuery details:', error);
         throw error;
     }
 }

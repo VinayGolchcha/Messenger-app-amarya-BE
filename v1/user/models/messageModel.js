@@ -10,7 +10,9 @@ const MessageSchema = new mongoose.Schema({
     content: { type: String, default: null},
     is_read: { type: Boolean, default: false},
     is_new: { type: Boolean, default: true},
-    sent_at: { type: Date, default: new Date}
+    sent_at: { type: Date, default: new Date},
+    sender_deleted: { type: Boolean, default: false},
+    reciever_deleted: { type: Boolean, default: false}
 });
 
 MessageSchema.plugin(timestamps);
