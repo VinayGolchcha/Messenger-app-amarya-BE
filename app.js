@@ -19,7 +19,6 @@ app.use(cookieParser());
 
 // CORS setup
 const corsOptions = {
-  origin: '*', // replace with your client URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 };
