@@ -5,8 +5,8 @@ const router = Router();
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages} from '../controllers/userController.js';
-import {createGroup} from '../controllers/groupController.js';
-import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal } from '../../../utils/validation.js';
+import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, updateGroup} from '../controllers/groupController.js';
+import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal } from '../../../utils/validation.js';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -18,6 +18,9 @@ app.get('/logout/:user_id', authenticateToken, userLogout);
 
 //group APIs
 app.post('/create-group', authenticateToken, createGroupVal, createGroup);
+app.post('/fetch-group-chat-history', authenticateToken, fetchGrpChatVal, fetchGroupChatHistory);
+app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessageVal, fetchGroupDataForUser);
+app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
 
 //message APIS
 app.post('/upload-file', upload.single('file'), authenticateToken, uploadFileVal, uploadFiles);

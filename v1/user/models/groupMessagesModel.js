@@ -8,7 +8,8 @@ const GroupMessageSchema = new mongoose.Schema({
     message_type: { type: String, enum: ['text', 'image', 'audio', 'video', 'document'], required: true},
     media_id : { type: mongoose.Schema.Types.ObjectId, ref: 'Media'},
     content: { type: String, default: null},
-    sent_at: { type: Date, default: new Date}
+    sent_at: { type: Date, default: new Date},
+    sender_deleted: { type: Boolean, default: false},
 });
 
 GroupMessageSchema.plugin(timestamps);

@@ -129,9 +129,9 @@ export const checkUserForGivenMessageQuery = async(user_id, message_id) => {
 export const updateDeleteStatusForUserQuery = async (is_user_sender, id) => {
     try {
         if(is_user_sender == true){
-            return await MessageModel.findByIdAndUpdate(id, { sender_deleted: true }, { safe: true, upsert: true, new: false });
+            return await MessageModel.findByIdAndUpdate(id, { sender_deleted: true }, { safe: true, upsert: true, new: true });
         }else{
-            return await MessageModel.findByIdAndUpdate(id, { reciever_deleted: true }, { safe: true, upsert: true, new: false });
+            return await MessageModel.findByIdAndUpdate(id, { reciever_deleted: true }, { safe: true, upsert: true, new: true });
         }
     } catch (error) {
         console.error('Error finding updateDeleteStatusForUserQuery details:', error);
@@ -150,7 +150,7 @@ export const deleteMessageByIdQuery = async(message_id) => {
 
 export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id) => {
     try {
-        return await MessageModel.updateMany({senders_id: user_id}, { sender_deleted: true }, { safe: true, upsert: true, new: false });
+        return await MessageModel.updateMany({senders_id: user_id}, { sender_deleted: true }, { safe: true, upsert: true, new: true });
     } catch (error) {
         console.error('Error finding updateDeleteStatusForAllMessagesInChatQuery details:', error);
         throw error;
