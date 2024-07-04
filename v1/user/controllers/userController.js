@@ -83,7 +83,7 @@ export const userLogin = async (req, res) => {
         });
         await insertTokenQuery(token, currentUser._id);
         res.cookie('token', token, {
-            httpOnly: true, // Cookie is accessible only through HTTP(S) protocol
+            httpOnly: false, // Cookie is accessible only through HTTP(S) protocol
             sameSite: 'None', // Allow cross-site usage
             secure: true // Ensures the cookie is only sent over HTTPS
           });
