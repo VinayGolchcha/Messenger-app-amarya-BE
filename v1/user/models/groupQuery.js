@@ -2,8 +2,17 @@ import mongoose from 'mongoose';
 import {GroupModel} from './groupModel.js';
 import { GroupMessageModel } from './groupMessagesModel.js';
 
-export const createGroupQuery = async (user_data) => {
-    return await GroupModel.create(user_data);
+export const createGroupQuery = async (data) => {
+    return await GroupModel.create(data);
+}
+
+export const updateGroupQuery = async (id, data) => {
+    try {
+        return await GroupModel.findByIdAndUpdate(id, {$set: data}, { safe: true, upsert: false, new: true });
+    } catch (error) {
+        console.error('Error finding checkGroupNameExistsQuery details:', error);
+        throw error;
+    }
 }
 
 export const groupDetailQuery = async (user_id) => {
@@ -34,6 +43,144 @@ export const getGroupDataQuery = async(group_name) => {
         return await GroupModel.findOne({'group_name': group_name});
     } catch (error) {
         console.error('Error finding getGroupDataQuery details:', error);
+        throw error;
+    }
+}
+
+export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
+    try {
+        let given_date = new Date(date);
+        const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
+        let data_found = false;
+        let result = [];
+        let required_days = 5;
+
+        while (!data_found) {
+            let currentStartDate = new Date(given_date);
+            currentStartDate.setDate(given_date.getDate() - required_days + 1);
+
+            const pipeline = [
+                {
+                    $match: {
+                        group_id:group_id,
+                        sent_at: {
+                            $gte: currentStartDate,
+                            $lt: new Date(given_date.setDate(given_date.getDate() + 1))
+                        },
+                        $or: [
+                            { sender_deleted: { $ne: true } },
+                            { $and: [
+                                { senders_id: sender_id },
+                                { sender_deleted: false }
+                            ]}
+                        ]
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users', // Assuming the users collection is named 'users'
+                        localField: 'senders_id',
+                        foreignField: '_id',
+                        as: 'sender'
+                    }
+                },
+                {
+                    $unwind: '$sender'
+                },
+                {
+                    $project: {
+                        group_id: 1,
+                        senders_id: 1,
+                        'sender.username': 1,
+                        content: 1,
+                        message_type: 1,
+                        media_id: 1,
+                        sent_at: 1,
+                        date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
+                    }
+                },
+                {
+                    $sort: { sent_at: -1 }
+                },
+                {
+                    $group: {
+                        _id: "$date",
+                        messages: {
+                            $push: {
+                                group_id: "$group_id",
+                                senders_id: "$senders_id",
+                                sender_name: "$sender.username", // Include sender's name in the output
+                                content: "$content",
+                                message_type: "$message_type",
+                                media_id: "$media_id",
+                                sent_at: "$sent_at"
+                            }
+                        }
+                    }
+                },
+                {
+                    $sort: { _id: -1 }
+                }
+            ];
+
+            result = await GroupMessageModel.aggregate(pipeline);
+            if (result.length > 0) {
+                data_found = true;
+            } else {
+                // Adjust the date range and reduce the required days if not enough data
+                given_date.setDate(given_date.getDate() - required_days);
+                required_days = Math.max(1, required_days - 1); // Ensure required_days doesn't go below 1
+
+                // Calculate the total look-back period to avoid infinite loops
+                const look_back_period = (new Date(date) - given_date) / (1000 * 60 * 60 * 24);
+                if (look_back_period >= max_look_back_days) {
+                    return result;
+                }
+            }
+        }
+        return result;
+    } catch (error) {
+        console.error('Error fetching group chat history:', error);
+        throw error;
+    }
+}
+
+export const fetchGroupsDataForUserQuery = async(user_id) => {
+    try {
+        const pipeline = [
+            {
+                $match: {
+                    members: user_id
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    group_name: 1,
+                    members: 1,
+                    created_by: 1,
+                    createdAt: 1,
+                    updatedAt: 1
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            }
+        ];
+
+        const result = await GroupModel.aggregate(pipeline);
+        return result;
+    } catch (error) {
+        console.error('Error finding fetchGroupsDataForUserQuery details:', error);
+        throw error;
+    }
+}
+
+export const checkUserAsAdminForGroupQuery = async(id, user_id) => {
+    try {
+        return await GroupModel.findOne({_id: id, created_by: user_id}).select('group_name created_by members');
+    } catch (error) {
+        console.error('Error finding checkUserAsAdminForGroupQuery details:', error);
         throw error;
     }
 }

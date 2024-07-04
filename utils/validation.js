@@ -40,6 +40,24 @@ export const fetchChatVal = [
     body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.')
 ]
 
+export const deleteChatVal = [
+    body('action').isString().withMessage('Action must be a string').notEmpty().withMessage('Action cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
+]
+
 export const newMessageVal = [
     param('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
+]
+
+export const fetchGrpChatVal = [
+    body('date').isString().withMessage('Date must be a string').notEmpty().withMessage('Date cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.')
+]
+
+export const updateGrpVal = [
+    body('group_name').isString().withMessage('Group name must be a string').notEmpty().withMessage('Group name cannot be empty.'),
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('members').isArray().withMessage('Members must be a array').notEmpty().withMessage('Members cannot be empty.'),
+    body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.')
 ]

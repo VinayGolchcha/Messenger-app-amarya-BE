@@ -61,7 +61,6 @@ const server = createServer(app);
 //   console.log(`Server is running on port ${port}`);
 // });
 
-
 try {
   await socketConnection(server);
   console.log("Socket connected successfully");

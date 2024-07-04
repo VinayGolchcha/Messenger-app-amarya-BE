@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
-import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery} from "../models/messageQuery.js";
+import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery} from "../models/messageQuery.js";
 
 dotenv.config();
 
@@ -224,6 +224,75 @@ export const fetchNewMessages = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
         const data = await fetchNewMessagesForUserQuery(user_id);
         return successResponse(res, data, `Messages fetched successfully!`);
+    } catch (error) {
+        console.error(error);
+        return internalServerErrorResponse(res, error)
+    }
+}
+
+export const deleteMessages = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let {action, message_id, user_id} = req.body
+        let message;
+
+        const deleteForMe = async () => {
+            message_id = new mongoose.Types.ObjectId(message_id)
+            user_id = new mongoose.Types.ObjectId(user_id)
+            const is_user = await checkUserForGivenMessageQuery(user_id, message_id)
+
+            if (is_user) {
+                const is_user_sender = is_user.senders_id.toString() == user_id.toString() ? true: false;
+                await updateDeleteStatusForUserQuery(is_user_sender, message_id)
+                message = `Message deleted successfully`
+                return message
+            }
+            message = `No message with that id found`
+            return message
+        }
+
+        const deleteForEveryone = async () => {
+            message_id = new mongoose.Types.ObjectId(message_id)
+            const is_deleted = await deleteMessageByIdQuery(message_id)
+
+            if (is_deleted) {
+                message = `Message deleted successfully`
+                return message
+            }
+            message = `No message with that id found`
+            return message
+        }
+
+        const deleteChat = async () => {
+            user_id = new mongoose.Types.ObjectId(user_id)
+            const is_deleted = await updateDeleteStatusForAllMessagesInChatQuery(user_id)
+
+            if (is_deleted.modifiedCount > 0) {
+                message = `Message deleted successfully`
+                return message
+            }
+            message = `No messages found`
+            return message
+        }
+
+        switch(action){
+            case 'deleteForMe': 
+                await deleteForMe()
+                break;
+            case 'deleteForEveryone': 
+                await deleteForEveryone()
+                break;
+            case 'deleteChat': 
+                await deleteChat();
+                break;
+        }
+
+        return successResponse(res, '', message);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

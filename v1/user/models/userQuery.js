@@ -17,7 +17,7 @@ export const userDataQuery = async (id) => {
 }
 
 export const insertTokenQuery = async (token, id) => {
-    return await UserModel.findOneAndUpdate({ _id: id, is_registered: true }, { $set: { "auth_token": token } }, { safe: true, upsert: false, new: false });
+    return await UserModel.findOneAndUpdate({ _id: id, is_registered: true }, { $set: { "auth_token": token } }, { safe: true, upsert: false, new: true });
 }
 
 export const updateSocketId = async(email, socket_id) => {
