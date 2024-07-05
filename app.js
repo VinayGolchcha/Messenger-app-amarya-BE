@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import {createServer} from 'http'; 
 import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
+import { runCronJobs } from './cron jobs/scheduler.js';
 import { socketConnection } from './socket.js';
 
 

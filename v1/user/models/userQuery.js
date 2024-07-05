@@ -89,3 +89,12 @@ export const findUserByNameQuery = async(search_text) => {
         throw error;
     }
 }
+
+export const getAllUsersQuery = async() => {
+    try {
+        return await UserModel.find().select('_id username email');
+    } catch (error) {
+        console.error('Error finding getAllUsersQuery details:', error);
+        throw error;
+    }
+}

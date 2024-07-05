@@ -4,7 +4,7 @@ const router = Router();
 
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, sendNotifications} from '../controllers/userController.js';
 import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup} from '../controllers/groupController.js';
 import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal } from '../../../utils/validation.js';
 
@@ -31,6 +31,7 @@ app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMess
 app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistory);
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
+app.post('/send-notifications', sendNotifications);
 
 app.use("/", router);
 

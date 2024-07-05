@@ -130,7 +130,7 @@ export const fetchNewMessagesForUserQuery = async(user_id) => {
         return await MessageModel.find({ 
             recievers_id: user_id, 
             is_new: true, 
-            reciever_deleted: false 
+            // reciever_deleted: false 
         })
         .select('senders_id recievers_id content message_type media_id sent_at')
         .populate('media_id', 'file_type file_name file_data');
@@ -182,6 +182,91 @@ export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id) => {
         return await MessageModel.updateMany({senders_id: user_id}, { sender_deleted: true }, { safe: true, upsert: true, new: true });
     } catch (error) {
         console.error('Error finding updateDeleteStatusForAllMessagesInChatQuery details:', error);
+        throw error;
+    }
+}
+
+export const fetchNewMessagesForNotificationQuery = async(user_id) => {
+    try {
+        const pipeline = [
+            {
+                $match: { 
+                    recievers_id: user_id, 
+                    is_new: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'media',
+                    localField: 'media_id',
+                    foreignField: '_id',
+                    as: 'media'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$media',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users', // Assuming the users collection is named 'users'
+                    localField: 'senders_id',
+                    foreignField: '_id',
+                    as: 'sender'
+                }
+            },
+            {
+                $unwind: '$sender'
+            },
+            {
+                $lookup: {
+                    from: 'users', // Assuming the users collection is named 'users'
+                    localField: 'recievers_id',
+                    foreignField: '_id',
+                    as: 'receiver'
+                }
+            },
+            {
+                $unwind: '$receiver'
+            },
+            {
+                $group: {
+                    _id: "$senders_id",
+                    sender_name: { $first: "$sender.username" },
+                    reciever_email: { $first: "$receiver.email" },
+                    messages: {
+                        $push: {
+                            senders_id: "$senders_id",
+                            recievers_id: "$recievers_id",
+                            content: "$content",
+                            message_type: "$message_type",
+                            media_id: "$media_id",
+                            media_details: {
+                                file_type: "$media.file_type",
+                                file_name: "$media.file_name",
+                                file_data: "$media.file_data"
+                            },
+                            sent_at: "$sent_at"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    senders_id: "$_id",
+                    sender_name: 1,
+                    reciever_email: 1, 
+                    messages: 1,
+                    _id: 0
+                }
+            }
+        ];
+
+        return await MessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error finding fetchNewMessagesForUserQuery details:', error);
         throw error;
     }
 }
