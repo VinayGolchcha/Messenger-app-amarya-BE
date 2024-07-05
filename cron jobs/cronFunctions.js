@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-import { getAllUsersQuery } from "../v1/user/models/userQuery";
-import { fetchNewMessagesForNotificationQuery } from "../v1/user/models/messageQuery";
-import { createNotificationQuery, updateNotification } from "../v1/user/models/notificationQuery";
-import { sendMail } from "../config/nodemailer";
+import { getAllUsersQuery } from "../v1/user/models/userQuery.js";
+import { fetchNewMessagesForNotificationQuery } from "../v1/user/models/messageQuery.js";
+import { createNotificationQuery, updateNotification } from "../v1/user/models/notificationQuery.js";
+import { sendMail } from "../config/nodemailer.js";
 dotenv.config();
 
 
