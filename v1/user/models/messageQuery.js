@@ -29,11 +29,12 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
         const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
         let data_found = false;
         let result = [];
-        let required_days = 5;
+        let required_days =     5;
+        const initial_date = new Date(given_date);
 
         while (!data_found) {
             let currentStartDate = new Date(given_date);
-            currentStartDate.setDate(given_date.getDate() - required_days + 1);
+            currentStartDate.setDate(currentStartDate.getDate() - required_days + 1);
 
             const pipeline = [
                 {
@@ -47,12 +48,29 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'media',
+                        localField: 'media_id',
+                        foreignField: '_id',
+                        as: 'media'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$media',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $project: {
                         senders_id: 1,
                         recievers_id: 1,
                         content: 1,
                         message_type: 1,
                         media_id: 1,
+                        'media.file_type': 1,
+                        'media.file_name': 1,
+                        'media.file_data': 1,
                         sent_at: 1,
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
                     }
@@ -70,6 +88,11 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                                 content: "$content",
                                 message_type: "$message_type",
                                 media_id: "$media_id",
+                                media_details: {
+                                    file_type: "$media.file_type",
+                                    file_name: "$media.file_name",
+                                    file_buffer: "$media.file_data"
+                                },
                                 sent_at: "$sent_at"
                             }
                         }
@@ -85,11 +108,11 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                 data_found = true;
             } else {
                 // If not enough data, adjust the date range and reduce the required days
-                given_date = new Date(given_date.setDate(given_date.getDate() - 1));
+                given_date.setDate(given_date.getDate() - required_days);
                 required_days = Math.max(1, required_days - 1); // Ensure required_days doesn't go below 1
 
                 // Calculate the total look-back period to avoid infinite loops
-                const look_back_period = (new Date(date) - given_date) / (1000 * 60 * 60 * 24);
+                const look_back_period = (initial_date - given_date) / (1000 * 60 * 60 * 24);
                 if (look_back_period >= max_look_back_days) {
                     return result;
                 }
@@ -97,14 +120,20 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
         }
         return result;
     } catch (error) {
-        console.error('Error finding fetchChatHistoryQuery details:', error);
+        console.error('Error fetching chat history:', error);
         throw error;
     }
 }
 
 export const fetchNewMessagesForUserQuery = async(user_id) => {
     try {
-        return await MessageModel.find({ recievers_id: user_id, is_new: true, reciever_deleted: false }).select('senders_id recievers_id content message_type media_id sent_at');
+        return await MessageModel.find({ 
+            recievers_id: user_id, 
+            is_new: true, 
+            reciever_deleted: false 
+        })
+        .select('senders_id recievers_id content message_type media_id sent_at')
+        .populate('media_id', 'file_type file_name file_data');
     } catch (error) {
         console.error('Error finding fetchNewMessagesForUserQuery details:', error);
         throw error;

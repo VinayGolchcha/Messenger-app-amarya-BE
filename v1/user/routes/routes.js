@@ -5,7 +5,7 @@ const router = Router();
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages} from '../controllers/userController.js';
-import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, updateGroup} from '../controllers/groupController.js';
+import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup} from '../controllers/groupController.js';
 import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal } from '../../../utils/validation.js';
 
 const storage = multer.memoryStorage();
@@ -21,6 +21,7 @@ app.post('/create-group', authenticateToken, createGroupVal, createGroup);
 app.post('/fetch-group-chat-history', authenticateToken, fetchGrpChatVal, fetchGroupChatHistory);
 app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessageVal, fetchGroupDataForUser);
 app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
+app.post('/search-message-in-group', searchMessageInGroup);
 
 //message APIS
 app.post('/upload-file', upload.single('file'), authenticateToken, uploadFileVal, uploadFiles);

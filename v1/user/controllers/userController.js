@@ -7,6 +7,7 @@ import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse,
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
 import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery} from "../models/messageQuery.js";
+import { findGroupByNameQuery } from "../models/groupQuery.js";
 
 dotenv.config();
 
@@ -165,7 +166,12 @@ export const searchInContacts = async (req, res) => {
 
         let {search_text} = req.body;
         search_text = search_text.toLowerCase();
-        const data = await findUserByNameQuery(search_text);
+        const user_data = await findUserByNameQuery(search_text);
+        const group_data = await findGroupByNameQuery(search_text);
+        let data = {
+            user_list : user_data,
+            group_list : group_data
+        }
         return successResponse(res, data, `Contact fetched successfully!`);
     } catch (error) {
         console.error(error);

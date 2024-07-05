@@ -88,6 +88,20 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                     $unwind: '$sender'
                 },
                 {
+                    $lookup: {
+                        from: 'media',
+                        localField: 'media_id',
+                        foreignField: '_id',
+                        as: 'media'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$media',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $project: {
                         group_id: 1,
                         senders_id: 1,
@@ -95,6 +109,9 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                         content: 1,
                         message_type: 1,
                         media_id: 1,
+                        'media.file_type': 1,
+                        'media.file_name': 1,
+                        'media.file_data': 1,
                         sent_at: 1,
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
                     }
@@ -113,6 +130,11 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                                 content: "$content",
                                 message_type: "$message_type",
                                 media_id: "$media_id",
+                                media_details: {
+                                    file_type: "$media.file_type",
+                                    file_name: "$media.file_name",
+                                    file_buffer: "$media.file_data"
+                                },
                                 sent_at: "$sent_at"
                             }
                         }
@@ -181,6 +203,29 @@ export const checkUserAsAdminForGroupQuery = async(id, user_id) => {
         return await GroupModel.findOne({_id: id, created_by: user_id}).select('group_name created_by members');
     } catch (error) {
         console.error('Error finding checkUserAsAdminForGroupQuery details:', error);
+        throw error;
+    }
+}
+
+export const findGroupByNameQuery = async(search_text) => {
+    try {
+        return await GroupModel.find({ group_name: { $regex: search_text, $options: 'i' } }).select('_id group_name created_by');
+    } catch (error) {
+        console.error('Error finding findGroupByNameQuery details:', error);
+        throw error;
+    }
+}
+
+export const findMessageinGroupQuery = async(search_text, group_id) => {
+    try {
+        return await GroupMessageModel.find({ 
+            content: { $regex: search_text, $options: 'i' }, 
+            group_id: group_id 
+          })
+          .select('_id content message_type senders_id media_id')
+          .populate('media_id', 'file_type file_name file_data');
+    } catch (error) {
+        console.error('Error finding findMessageinGroupQuery details:', error);
         throw error;
     }
 }
