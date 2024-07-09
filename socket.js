@@ -112,7 +112,9 @@ function buildMsg(id, name, text) {
       text,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
-          minute: 'numeric'
+          minute: 'numeric',
+          hour12: false, // Use 24-hour format
+          timeZone: 'Asia/Kolkata'
       }).format(new Date())
   }
 }
