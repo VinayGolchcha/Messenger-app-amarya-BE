@@ -3,7 +3,7 @@ import express, { json } from 'express';
 import { config } from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-// import https from 'https';
+import https from 'https';
 import {createServer} from 'http'; 
 import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
@@ -53,8 +53,8 @@ try {
 } catch (error) {
   console.warn("SSL certificate files not found or cannot be read:", error);
 }
-// const server = https.createServer(sslOptions, app);
-const server = createServer(app);
+const server = https.createServer(sslOptions, app);
+// const server = createServer(app);
 
 // Create an HTTPS server with SSL/TLS
 // const port = process.env.PORT || 6060;
