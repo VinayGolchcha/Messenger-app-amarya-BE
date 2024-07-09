@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import https from 'https';
-import {createServer} from 'http'; 
+import http from 'http'; 
 import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
 import { runCronJobs } from './cron jobs/scheduler.js';
@@ -44,17 +44,25 @@ try {
 }
 
 // SSL/TLS Certificate options
-let sslOptions = {};
-try {
-  sslOptions = {
-    key: fs.readFileSync('private.key'), 
-    cert: fs.readFileSync('certificate.crt')
-  };
-} catch (error) {
-  console.warn("SSL certificate files not found or cannot be read:", error);
+const isProduction = process.env.NODE_ENV === 'production';
+let server;
+
+if (isProduction) {
+  // Use HTTP for cloud platforms which provide HTTPS termination
+  server = http.createServer(app);
+} else {
+  // Use HTTPS for local development
+  let sslOptions = {};
+  try {
+    sslOptions = {
+      key: fs.readFileSync('./private.key'), 
+      cert: fs.readFileSync('./certificate.crt')
+    };
+  } catch (error) {
+    console.warn("SSL certificate files not found or cannot be read:", error);
+  }
+  server = https.createServer(sslOptions, app);
 }
-const server = https.createServer(sslOptions, app);
-// const server = createServer(app);
 
 // Create an HTTPS server with SSL/TLS
 // const port = process.env.PORT || 6060;
