@@ -27,14 +27,16 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
     try {
         let given_date = new Date(date);
         const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
-        let data_found = false;
         let result = [];
-        let required_days =     5;
+        let attempts = 0;
         const initial_date = new Date(given_date);
 
-        while (!data_found) {
+        while (attempts <= max_look_back_days) {
             let currentStartDate = new Date(given_date);
-            currentStartDate.setDate(currentStartDate.getDate() - required_days + 1);
+            currentStartDate.setHours(0, 0, 0, 0); // Start of the day
+            let nextDay = new Date(given_date);
+            nextDay.setDate(nextDay.getDate() + 1);
+            nextDay.setHours(0, 0, 0, 0); // Start of the next day
 
             const pipeline = [
                 {
@@ -43,7 +45,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                             { senders_id: senders_id, recievers_id: recievers_id },
                             { senders_id: recievers_id, recievers_id: senders_id }
                         ],
-                        sent_at: { $gte: currentStartDate, $lt: new Date(given_date.setDate(given_date.getDate() + 1)) },
+                        sent_at: { $gte: currentStartDate, $lt: nextDay },
                         sender_deleted: false
                     }
                 },
@@ -104,18 +106,18 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
             ];
 
             result = await MessageModel.aggregate(pipeline);
-            if (result.length > 0) {
-                data_found = true;
-            } else {
-                // If not enough data, adjust the date range and reduce the required days
-                given_date.setDate(given_date.getDate() - required_days);
-                required_days = Math.max(1, required_days - 1); // Ensure required_days doesn't go below 1
 
-                // Calculate the total look-back period to avoid infinite loops
-                const look_back_period = (initial_date - given_date) / (1000 * 60 * 60 * 24);
-                if (look_back_period >= max_look_back_days) {
-                    return result;
-                }
+            if (result.length > 0) {
+                break; // Found data, exit the loop
+            }
+
+            // Adjust given_date for the next iteration
+            given_date.setDate(given_date.getDate() - 1);
+            attempts++;
+
+            // Ensure we do not exceed the maximum look-back days
+            if (attempts > max_look_back_days) {
+                console.log(`Reached maximum look-back days (${max_look_back_days}). No data found.`);
             }
         }
         return result;
@@ -124,6 +126,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
         throw error;
     }
 }
+
 
 export const fetchNewMessagesForUserQuery = async(user_id) => {
     try {
