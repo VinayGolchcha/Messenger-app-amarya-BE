@@ -4,7 +4,7 @@ const router = Router();
 
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, fetchConversationsList} from '../controllers/userController.js';
 import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup} from '../controllers/groupController.js';
 import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal } from '../../../utils/validation.js';
 
@@ -23,7 +23,8 @@ app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessag
 app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
 app.post('/search-message-in-group', searchMessageInGroup);
 
-//message APIS
+//user APIS
+app.get('/fetch-conversations/:user_id', fetchConversationsList);
 app.post('/upload-file', upload.single('file'), authenticateToken, uploadFileVal, uploadFiles);
 app.get('/fetch-all-contacts/:user_id', authenticateToken, fetchAllContacts);
 app.post('/search-in-contacts/:user_id', authenticateToken, searchVal,  searchInContacts);

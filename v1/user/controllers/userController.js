@@ -6,7 +6,8 @@ import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
-import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery} from "../models/messageQuery.js";
+import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, 
+    deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery} from "../models/messageQuery.js";
 import { findGroupByNameQuery } from "../models/groupQuery.js";
 
 dotenv.config();
@@ -299,6 +300,24 @@ export const deleteMessages = async (req, res) => {
         }
 
         return successResponse(res, '', message);
+    } catch (error) {
+        console.error(error);
+        return internalServerErrorResponse(res, error)
+    }
+}
+
+export const fetchConversationsList = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let user_id = req.params.user_id;
+        user_id = new mongoose.Types.ObjectId(user_id)
+        const data = await fetchConversationListQuery(user_id);
+        return successResponse(res, data, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

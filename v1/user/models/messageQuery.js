@@ -29,7 +29,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
         const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
         let data_found = false;
         let result = [];
-        let required_days =     5;
+        let required_days = 5;
         const initial_date = new Date(given_date);
 
         while (!data_found) {
@@ -211,7 +211,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
             },
             {
                 $lookup: {
-                    from: 'users', // Assuming the users collection is named 'users'
+                    from: 'users',
                     localField: 'senders_id',
                     foreignField: '_id',
                     as: 'sender'
@@ -222,7 +222,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
             },
             {
                 $lookup: {
-                    from: 'users', // Assuming the users collection is named 'users'
+                    from: 'users',
                     localField: 'recievers_id',
                     foreignField: '_id',
                     as: 'receiver'
@@ -267,6 +267,113 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
         return await MessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error finding fetchNewMessagesForUserQuery details:', error);
+        throw error;
+    }
+}
+
+export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) => {
+    try {
+        const pipeline = [
+            {
+                $match: { 
+                    $or: [
+                        { recievers_id: user_id },
+                        { 'group.members': user_id }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: 'media',
+                    localField: 'media_id',
+                    foreignField: '_id',
+                    as: 'media'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$media',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'senders_id',
+                    foreignField: '_id',
+                    as: 'sender'
+                }
+            },
+            {
+                $unwind: '$sender'
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'recievers_id',
+                    foreignField: '_id',
+                    as: 'receiver'
+                }
+            },
+            {
+                $unwind: '$receiver'
+            },
+            {
+                $lookup: {
+                    from: 'groups',
+                    localField: 'group_id',
+                    foreignField: '_id',
+                    as: 'group'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$group',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $sort: { sent_at: -1 }
+            },
+            {
+                $group: {
+                    _id: "$senders_id",
+                    sender_name: { $first: "$sender.username" },
+                    reciever_username: { $first: "$receiver.username" },
+                    group_id: { $first: "$group._id" },
+                    group_name: { $first: "$group.name" },
+                    messages: {
+                        $push: {
+                            senders_id: "$senders_id",
+                            content: "$content",
+                            message_type: "$message_type",
+                            media_id: "$media_id",
+                            media_details: {
+                                file_type: "$media.file_type",
+                                file_name: "$media.file_name",
+                                file_data: "$media.file_data"
+                            },
+                            sent_at: "$sent_at"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    senders_id: "$_id",
+                    sender_name: 1,
+                    reciever_username: 1, 
+                    group_id: 1,
+                    group_name: 1,
+                    messages: { $slice: ["$messages", limit_per_sender] },
+                    _id: 0
+                }
+            }
+        ];
+
+        return await MessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error finding fetchConversationListQuery details:', error);
         throw error;
     }
 }
