@@ -21,7 +21,7 @@ export const createGroup = async (req, res) => {
         const group_name_exists = await checkGroupNameExistsQuery(group_name)
         const user_data = await userDataQuery(user_id)
         
-        if(group_name_exists){
+        if(group_name_exists.length > 0){
             return notFoundResponse(res, '', 'Group name already exists, please create a new name')
         }
         
