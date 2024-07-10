@@ -276,10 +276,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
         const pipeline = [
             {
                 $match: { 
-                    $or: [
-                        { recievers_id: user_id },
-                        { 'group.members': user_id }
-                    ]
+                        recievers_id: user_id
                 }
             },
             {
@@ -319,20 +316,6 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 $unwind: '$receiver'
             },
             {
-                $lookup: {
-                    from: 'groups',
-                    localField: 'group_id',
-                    foreignField: '_id',
-                    as: 'group'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$group',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
                 $sort: { sent_at: -1 }
             },
             {
@@ -340,11 +323,8 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
                     reciever_username: { $first: "$receiver.username" },
-                    group_id: { $first: "$group._id" },
-                    group_name: { $first: "$group.name" },
                     messages: {
                         $push: {
-                            senders_id: "$senders_id",
                             content: "$content",
                             message_type: "$message_type",
                             media_id: "$media_id",
@@ -355,17 +335,24 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                             },
                             sent_at: "$sent_at"
                         }
+                    },
+                    new_messages_count: {
+                        $sum: {
+                            $cond: [{ $eq: ["$is_new", true] }, 1, 0]
+                        }
                     }
                 }
             },
             {
                 $project: {
+                    type: "private",
                     senders_id: "$_id",
                     sender_name: 1,
                     reciever_username: 1, 
-                    group_id: 1,
-                    group_name: 1,
+                    group_id: null,
+                    group_name: null,
                     messages: { $slice: ["$messages", limit_per_sender] },
+                    new_messages_count: 1,
                     _id: 0
                 }
             }

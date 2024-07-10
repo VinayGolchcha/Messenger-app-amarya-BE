@@ -1,7 +1,7 @@
 import { Server } from "socket.io"
 import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery} from "./v1/user/models/userQuery.js"
 import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
-import { addGroupMessageQuery, getGroupDataQuery } from "./v1/user/models/groupQuery.js"
+import { addGroupMessageQuery, getGroupDataQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 
 export const socketConnection = async(server)=>{
@@ -37,8 +37,8 @@ export const socketConnection = async(server)=>{
 
         socket.on("privateMessage", async({ message, reciever_socket_id, message_type, media_id }) => {
           const recipient_socket = io.sockets.sockets.get(reciever_socket_id);
-          const sender_data = await findUserDetailQuery(socket.id)
-          const reciever_data = await findUserDetailQuery(reciever_socket_id)
+          const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), findUserDetailQuery(reciever_socket_id)]);
+         
           if (recipient_socket){
             socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message));
           }
@@ -53,13 +53,14 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("markAsRead", async ({ message_id }) => {
-          await markAsReadQuery(message_id);
+          const user = await findUserDetailQuery(socket.id)
+          await Promise.all([markAsReadQuery(message_id),
+            updateReadByStatusQuery(message_id, user._id)])
         });
 
         socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
           console.log('message received: ', message);
-          const user = await findUserDetailQuery(socket.id)
-          const group_id = await getGroupDataQuery(group_name)
+          const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
           io.to(group_name).emit('message', buildMsg(user._id, user.username, message))
 
           const message_data = {
@@ -69,7 +70,8 @@ export const socketConnection = async(server)=>{
             content: message,
             media_id: media_id ? media_id : null 
           }
-          await addGroupMessageQuery(message_data)
+          const message_cr = await addGroupMessageQuery(message_data)
+          await updateReadByStatusQuery(message_cr._id, user._id)
         });
 
         socket.on('enterGroup', async ({ user_id, group_name }) => {

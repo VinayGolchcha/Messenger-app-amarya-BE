@@ -229,3 +229,108 @@ export const findMessageinGroupQuery = async(search_text, group_id) => {
         throw error;
     }
 }
+
+export const fetchGroupConversationListQuery = async(user_id, limit_per_sender = 1) => {
+    try {
+        const pipeline = [
+            {
+                $lookup: {
+                    from: 'groups',
+                    localField: 'group_id',
+                    foreignField: '_id',
+                    as: 'group'
+                }
+            },
+            {
+                $unwind: '$group'
+            },
+            {
+                $match: { 
+                        'group.members': user_id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'media',
+                    localField: 'media_id',
+                    foreignField: '_id',
+                    as: 'media'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$media',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'senders_id',
+                    foreignField: '_id',
+                    as: 'sender'
+                }
+            },
+            {
+                $unwind: '$sender'
+            },
+            {
+                $sort: { sent_at: -1 }
+            },
+            {
+                $group: {
+                    _id: "$senders_id",
+                    sender_name: { $first: "$sender.username" },
+                    group_id: { $first: "$group._id" },
+                    group_name: { $first: "$group.group_name" },
+                    messages: {
+                        $push: {
+                            senders_id: "$senders_id",
+                            content: "$content",
+                            message_type: "$message_type",
+                            media_id: "$media_id",
+                            media_details: {
+                                file_type: "$media.file_type",
+                                file_name: "$media.file_name",
+                                file_data: "$media.file_data"
+                            },
+                            sent_at: "$sent_at"
+                        }
+                    },
+                    new_messages_count: {
+                        $sum: {
+                            $cond: [{ $not: { $in: [user_id, "$read_by"] } }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    type: "group",
+                    senders_id: "$_id",
+                    sender_name: 1,
+                    reciever_username: null, 
+                    group_id: 1,
+                    group_name: 1,
+                    messages: { $slice: ["$messages", limit_per_sender] },
+                    new_messages_count: 1,
+                    _id: 0
+                }
+            }
+        ];
+
+        return await GroupMessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error finding fetchGroupConversationListQuery details:', error);
+        throw error;
+    }
+}
+
+export const updateReadByStatusQuery = async(id, user_id) => {
+    try {
+        return await GroupMessageModel.updateOne({_id: id}, { $addToSet: { read_by: user_id } });
+    } catch (error) {
+        console.error('Error finding updateReadByStatusQuery details:', error);
+        throw error;
+    }
+}

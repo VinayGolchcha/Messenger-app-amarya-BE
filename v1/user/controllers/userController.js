@@ -8,7 +8,7 @@ import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findU
 import { uploadMediaQuery } from "../models/mediaQuery.js";
 import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, 
     deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery} from "../models/messageQuery.js";
-import { findGroupByNameQuery } from "../models/groupQuery.js";
+import { fetchGroupConversationListQuery, findGroupByNameQuery } from "../models/groupQuery.js";
 
 dotenv.config();
 
@@ -316,8 +316,12 @@ export const fetchConversationsList = async (req, res) => {
 
         let user_id = req.params.user_id;
         user_id = new mongoose.Types.ObjectId(user_id)
-        const data = await fetchConversationListQuery(user_id);
-        return successResponse(res, data, `Data fetched successfully!`);
+        const [private_data, group_data] = await Promise.all([
+            fetchConversationListQuery(user_id),
+            fetchGroupConversationListQuery(user_id)
+        ]);
+        const combined_messages = [...private_data, ...group_data];
+        return successResponse(res, combined_messages, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
