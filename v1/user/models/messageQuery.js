@@ -49,7 +49,7 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
                     'media.file_type': 1,
                     'media.file_name': 1,
                     'media.file_data': 1,
-                    sent_at: {
+                    time: {
                         $dateToString: {
                             format: "%H:%M",
                             date: { $add: ["$sent_at", 19800000] }
@@ -167,7 +167,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                                     file_name: "$media.file_name",
                                     file_buffer: "$media.file_data"
                                 },
-                                sent_at: "$sent_at",
+                                time: "$sent_at",
                                 is_sent_by_sender: "$is_sent_by_sender"
                             }
                         }
@@ -327,7 +327,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
-                            sent_at: "$sent_at"
+                            time: "$sent_at"
                         }
                     }
                 }
@@ -412,7 +412,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
-                            sent_at:{
+                            time:{
                                 $dateToString: {
                                     format: "%H:%M",
                                     date: { $add: ["$sent_at", 19800000] }

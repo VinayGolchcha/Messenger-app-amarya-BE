@@ -142,7 +142,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                                     file_name: "$media.file_name",
                                     file_buffer: "$media.file_data"
                                 },
-                                sent_at: "$sent_at",
+                                time: "$sent_at",
                                 is_sent_by_sender: "$is_sent_by_sender"
                             }
                         }
@@ -300,7 +300,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
-                            sent_at: {
+                            time: {
                                 $dateToString: {
                                     format: "%H:%M",
                                     date: { $add: ["$sent_at", 19800000] }
