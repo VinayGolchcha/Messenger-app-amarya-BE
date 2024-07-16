@@ -82,6 +82,10 @@ export const fetchGroupChatHistory = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id);
         group_id = new mongoose.Types.ObjectId(group_id);
         const data = await fetchGroupChatHistoryQuery(group_id, date, user_id);
+
+        if(data.length == 0){
+            return successResponse(res, data, `No chats found in the given date range`);
+        };
         return successResponse(res, data, `Group Messages fetched successfully!`);
     } catch (error) {
         console.error(error);

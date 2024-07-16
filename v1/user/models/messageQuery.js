@@ -14,29 +14,73 @@ export const markAsReadQuery = async (id) => {
     return await MessageModel.findByIdAndUpdate(id, { is_read: true, is_new: false });
 }
 
-export const findMessageQuery = async(senders_id, recievers_id, search_text) => {
+export const findMessageQuery = async (senders_id, recievers_id, search_text) => {
     try {
-        return await MessageModel.find({senders_id: senders_id, recievers_id: recievers_id, content: { $regex: search_text, $options: 'i' }, sender_deleted: false}).select('senders_id recievers_id content message_type media_id sent_at');
+        const pipeline = [
+            {
+                $match: {
+                    senders_id: senders_id,
+                    recievers_id: recievers_id,
+                    content: { $regex: search_text, $options: 'i' },
+                    sender_deleted: false
+                }
+            },
+            {
+                $lookup: {
+                    from: 'media',
+                    localField: 'media_id',
+                    foreignField: '_id',
+                    as: 'media'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$media',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    senders_id: 1,
+                    recievers_id: 1,
+                    content: 1,
+                    message_type: 1,
+                    media_id: 1,
+                    'media.file_type': 1,
+                    'media.file_name': 1,
+                    'media.file_data': 1,
+                    sent_at: {
+                        $dateToString: {
+                            format: "%H:%M",
+                            date: { $add: ["$sent_at", 19800000] }
+                        }
+                    }
+                }
+            }
+        ];
+
+        return await MessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error finding findMessageQuery details:', error);
         throw error;
     }
-}
+};
 
 export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
     try {
         let given_date = new Date(date);
-        const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
+        const max_look_back_days = 30;
+        const required_days_of_data = 5;
         let result = [];
         let attempts = 0;
-        const initial_date = new Date(given_date);
+        let days_with_data = 0;
 
-        while (attempts <= max_look_back_days) {
+        while (attempts < max_look_back_days && days_with_data < required_days_of_data) {
             let currentStartDate = new Date(given_date);
-            currentStartDate.setHours(0, 0, 0, 0); // Start of the day
+            currentStartDate.setHours(0, 0, 0, 0);
             let nextDay = new Date(given_date);
             nextDay.setDate(nextDay.getDate() + 1);
-            nextDay.setHours(0, 0, 0, 0); // Start of the next day
+            nextDay.setHours(0, 0, 0, 0);
 
             const pipeline = [
                 {
@@ -64,17 +108,42 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'senders_id',
+                        foreignField: '_id',
+                        as: 'sender'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'recievers_id',
+                        foreignField: '_id',
+                        as: 'receiver'
+                    }
+                },
+                {
                     $project: {
+                        _id: 1,
                         senders_id: 1,
+                        sender_name: { $arrayElemAt: ['$sender.username', 0] },
                         recievers_id: 1,
+                        receiver_name:  { $arrayElemAt: ['$receiver.username', 0] },
                         content: 1,
                         message_type: 1,
                         media_id: 1,
                         'media.file_type': 1,
                         'media.file_name': 1,
                         'media.file_data': 1,
-                        sent_at: 1,
-                        date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
+                        sent_at: {
+                            $dateToString: {
+                                format: "%H:%M",
+                                date: { $add: ["$sent_at", 19800000] }
+                            }
+                        },
+                        date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
+                        is_sent_by_sender: { $eq: ['$senders_id', senders_id] }
                     }
                 },
                 {
@@ -85,8 +154,11 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                         _id: "$date",
                         messages: {
                             $push: {
+                                _id: "$_id",
                                 senders_id: "$senders_id",
+                                sender_name: "$sender_name",
                                 recievers_id: "$recievers_id",
+                                receiver_name: "$receiver_name",
                                 content: "$content",
                                 message_type: "$message_type",
                                 media_id: "$media_id",
@@ -95,7 +167,8 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                                     file_name: "$media.file_name",
                                     file_buffer: "$media.file_data"
                                 },
-                                sent_at: "$sent_at"
+                                sent_at: "$sent_at",
+                                is_sent_by_sender: "$is_sent_by_sender"
                             }
                         }
                     }
@@ -105,27 +178,30 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                 }
             ];
 
-            result = await MessageModel.aggregate(pipeline);
+            const dailyResult = await MessageModel.aggregate(pipeline);
 
-            if (result.length > 0) {
-                break; // Found data, exit the loop
+            if (dailyResult.length > 0) {
+                result = result.concat(dailyResult);
+                days_with_data++;
             }
 
             // Adjust given_date for the next iteration
             given_date.setDate(given_date.getDate() - 1);
             attempts++;
-
-            // Ensure we do not exceed the maximum look-back days
-            if (attempts > max_look_back_days) {
-                console.log(`Reached maximum look-back days (${max_look_back_days}). No data found.`);
-            }
         }
+
+        if (days_with_data === 0) {
+            console.log(`No data found in the last ${max_look_back_days} days.`);
+        } else if (days_with_data < required_days_of_data) {
+            console.log(`Only found data for ${days_with_data} days in the last ${max_look_back_days} days.`);
+        }
+
         return result;
     } catch (error) {
         console.error('Error fetching chat history:', error);
         throw error;
     }
-}
+};
 
 
 export const fetchNewMessagesForUserQuery = async(user_id) => {
@@ -336,7 +412,12 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
-                            sent_at: "$sent_at"
+                            sent_at:{
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: { $add: ["$sent_at", 19800000] }
+                                }
+                            }
                         }
                     },
                     new_messages_count: {

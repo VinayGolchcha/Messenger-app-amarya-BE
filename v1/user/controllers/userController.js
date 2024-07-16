@@ -212,6 +212,9 @@ export const fetchChatHistory = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
         const data = await fetchChatHistoryQuery(user_id, recievers_id, date);
+        if (data.length == 0){
+            return successResponse(res, data, `No chats found in the given date range`)
+        }
         return successResponse(res, data, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
