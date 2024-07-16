@@ -13,7 +13,6 @@ export const sendNotifications = async () => {
         for(let i = 0; i<data.length; i++){
             const user_id = new mongoose.Types.ObjectId(data[i]._id)
             const new_messages = await fetchNewMessagesForNotificationQuery(user_id)
-            console.log(new_messages)
             
             for (let j = 0; j < new_messages.length; j++) {
                 let content = `You have recieved ${(new_messages[j].messages).length} message(s) from ${new_messages[j].sender_name}`

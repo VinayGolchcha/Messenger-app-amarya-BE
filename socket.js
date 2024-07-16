@@ -81,7 +81,7 @@ export const socketConnection = async(server)=>{
           if (user.length > 0) {
             socket.join(user[0].group_name)
             socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
-            socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`)) //broadcast to everyone in the room
+            socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
           } else {
             socket.emit('message', buildMsg(`You have not been able to join due to some error`))
           }
@@ -115,7 +115,7 @@ function buildMsg(id, name, text) {
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
           minute: 'numeric',
-          hour12: false, // Use 24-hour format
+          hour12: false,
           timeZone: 'Asia/Kolkata'
       }).format(new Date())
   }
