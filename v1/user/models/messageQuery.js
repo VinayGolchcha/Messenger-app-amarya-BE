@@ -311,6 +311,43 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
                 $unwind: '$receiver'
             },
             {
+                $lookup: {
+                    from: 'users',
+                    let: { sender_id: "$senders_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ["$_id", user_id]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                isMuted: {
+                                    $filter: {
+                                        input: "$mute_notifications.direct_messages",
+                                        as: "dm",
+                                        cond: {
+                                            $and: [
+                                                { $eq: ["$$dm.userId", "$$sender_id"] },
+                                                { $eq: ["$$dm.mute_status", true] }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    as: 'sender_mute_status'
+                }
+            },
+            {
+                $match: {
+                    "sender_mute_status.isMuted": { $size: 0 }
+                }
+            },
+            {
                 $group: {
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
