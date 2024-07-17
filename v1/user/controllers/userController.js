@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
-import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery} from "../models/userQuery.js"
+import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery,fetchUserProfileQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
 import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, 
     deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery} from "../models/messageQuery.js";
@@ -325,6 +325,26 @@ export const fetchConversationsList = async (req, res) => {
         ]);
         const combined_messages = [...private_data, ...group_data];
         return successResponse(res, combined_messages, `Data fetched successfully!`);
+    } catch (error) {
+        console.error(error);
+        return internalServerErrorResponse(res, error)
+    }
+}
+export const fetchUserProfile = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let user_id = req.params.user_id;
+        user_id = new mongoose.Types.ObjectId(user_id)
+        const data = await fetchUserProfileQuery(user_id);
+        if (data.length == 0){
+            return successResponse(res, data, `No Profile Found In Data `)
+        }
+        return successResponse(res, data, `profile fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

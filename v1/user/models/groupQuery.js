@@ -345,3 +345,11 @@ export const updateReadByStatusQuery = async(id, user_id) => {
         throw error;
     }
 }
+export const fetchGroupDetailQuery = async(group_id) => {
+    try {
+        return await GroupModel.findOne({_id: group_id}).select('_id group_name created_by members');
+    } catch (error) {
+        console.error('Error finding fetchGroupdetailQuery details:', error);
+        throw error;
+    }
+}

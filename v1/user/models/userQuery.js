@@ -98,3 +98,12 @@ export const getAllUsersQuery = async() => {
         throw error;
     }
 }
+
+export const fetchUserProfileQuery = async(user_id) => {
+    try {
+        return await UserModel.findOne({_id:user_id}).select('_id username email socket_id');
+    } catch (error) {
+        console.error('Error finding fetchUsersProfileQuery details:', error);
+        throw error;
+    }
+}

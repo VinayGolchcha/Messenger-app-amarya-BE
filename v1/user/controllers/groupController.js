@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
-import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery} from "../models/groupQuery.js"
+import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
 
 dotenv.config();
@@ -124,6 +124,27 @@ export const searchMessageInGroup = async (req, res) => {
         search_text = search_text.toLowerCase();
         const data = await findMessageinGroupQuery(search_text, group_id);
         return successResponse(res, data, `Messages fetched successfully!`);
+    } catch (error) {
+        console.error(error);
+        return internalServerErrorResponse(res, error)
+    }
+}
+
+export const fetchGroupDetail = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let group_id = req.params.group_id;
+        group_id = new mongoose.Types.ObjectId(group_id)
+        const data = await fetchGroupDetailQuery(group_id);
+        if (data.length == 0){
+            return successResponse(res, data, `No Group Found In Data `)
+        }
+        return successResponse(res, data, `Group fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
