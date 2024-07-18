@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
-import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery} from "../models/groupQuery.js"
+import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
 
 dotenv.config();
@@ -103,7 +103,7 @@ export const fetchGroupDataForUser = async (req, res) => {
 
         let user_id = req.params.user_id;
         user_id = new mongoose.Types.ObjectId(user_id);
-        const data = await fetchGroupsDataForUserQuery(user_id);
+        const data = await fetchGroupConversationListQuery(user_id);
         return successResponse(res, data, `Group Data fetched successfully!`);
     } catch (error) {
         console.error(error);
