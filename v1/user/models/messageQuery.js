@@ -45,6 +45,7 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
                     recievers_id: 1,
                     content: 1,
                     message_type: 1,
+                    is_read: 1,
                     media_id: 1,
                     'media.file_type': 1,
                     'media.file_name': 1,
@@ -90,7 +91,26 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                             { senders_id: recievers_id, recievers_id: senders_id }
                         ],
                         sent_at: { $gte: currentStartDate, $lt: nextDay },
-                        sender_deleted: false
+                    }
+                },
+                {
+                    $addFields: {
+                        is_sender: { $eq: ["$senders_id", senders_id] },
+                        is_receiver: { $eq: ["$recievers_id", senders_id] }
+                    }
+                },
+                {
+                    $redact: {
+                        $cond: {
+                            if: {
+                                $or: [
+                                    { $and: [{ $eq: ["$is_sender", true] }, { $eq: ["$sender_deleted", false] }] },
+                                    { $and: [{ $eq: ["$is_receiver", true] }, { $eq: ["$receiver_deleted", false] }] }
+                                ]
+                            },
+                            then: "$$KEEP",
+                            else: "$$PRUNE"
+                        }
                     }
                 },
                 {
@@ -132,6 +152,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                         receiver_name:  { $arrayElemAt: ['$receiver.username', 0] },
                         content: 1,
                         message_type: 1,
+                        is_read: 1,
                         media_id: 1,
                         'media.file_type': 1,
                         'media.file_name': 1,
@@ -161,6 +182,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                                 receiver_name: "$receiver_name",
                                 content: "$content",
                                 message_type: "$message_type",
+                                is_read: "$is_read",
                                 media_id: "$media_id",
                                 media_details: {
                                     file_type: "$media.file_type",
@@ -211,7 +233,7 @@ export const fetchNewMessagesForUserQuery = async(user_id) => {
             is_new: true, 
             // reciever_deleted: false 
         })
-        .select('senders_id recievers_id content message_type media_id sent_at')
+        .select('senders_id recievers_id content message_type is_read media_id sent_at')
         .populate('media_id', 'file_type file_name file_data');
     } catch (error) {
         console.error('Error finding fetchNewMessagesForUserQuery details:', error);
@@ -227,7 +249,7 @@ export const checkUserForGivenMessageQuery = async(user_id, message_id) => {
                 { recievers_id: user_id },
                 { senders_id: user_id }
             ]
-        }).select('senders_id recievers_id content message_type media_id sent_at');
+        }).select('senders_id recievers_id content message_type is_read media_id sent_at');
     } catch (error) {
         console.error('Error finding checkUserForGivenMessageQuery details:', error);
         throw error;
@@ -358,6 +380,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
                             recievers_id: "$recievers_id",
                             content: "$content",
                             message_type: "$message_type",
+                            is_read: "$is_read",
                             media_id: "$media_id",
                             media_details: {
                                 file_type: "$media.file_type",
@@ -393,6 +416,11 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
             {
                 $match: { 
                         recievers_id: user_id
+                }
+            },
+            {
+                $match: {
+                    sender_deleted: { $ne: true }
                 }
             },
             {
@@ -438,11 +466,13 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 $group: {
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
+                    sender_socket_id: {$first: "$sender.socket_id"},
                     reciever_username: { $first: "$receiver.username" },
                     messages: {
                         $push: {
                             content: "$content",
                             message_type: "$message_type",
+                            is_read: "$is_read",
                             media_id: "$media_id",
                             media_details: {
                                 file_type: "$media.file_type",
@@ -466,12 +496,10 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
             },
             {
                 $project: {
-                    type: "private",
                     senders_id: "$_id",
                     sender_name: 1,
+                    sender_socket_id: "$sender_socket_id",
                     reciever_username: 1, 
-                    group_id: null,
-                    group_name: null,
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
                     _id: 0

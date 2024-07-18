@@ -257,6 +257,11 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                 }
             },
             {
+                $match: {
+                    senders_id: { $ne: user_id }
+                }
+            },
+            {
                 $lookup: {
                     from: 'media',
                     localField: 'media_id',
@@ -288,8 +293,11 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                 $group: {
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
+                    sender_socket_id: {$first: "$sender.socket_id"},
                     group_id: { $first: "$group._id" },
                     group_name: { $first: "$group.group_name" },
+                    members: { $first: "$group.members" },
+                    created_by: { $first: "$group.created_by" },
                     messages: {
                         $push: {
                             senders_id: "$senders_id",
@@ -318,12 +326,13 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
             },
             {
                 $project: {
-                    type: "group",
                     senders_id: "$_id",
                     sender_name: 1,
-                    reciever_username: null, 
+                    sender_socket_id: "$sender_socket_id",
                     group_id: 1,
                     group_name: 1,
+                    members: 1,
+                    created_by: 1, 
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
                     _id: 0
@@ -465,6 +474,7 @@ export const fetchNewMessagesForGroupNotificationQuery = async (id) => {
         throw error;
     }
 };
+
 export const fetchGroupDetailQuery = async(group_id) => {
     try {
         return await GroupModel.findOne({_id: group_id}).select('_id group_name created_by members');

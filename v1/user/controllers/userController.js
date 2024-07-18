@@ -248,7 +248,7 @@ export const deleteMessages = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        let {action, message_id, user_id} = req.body
+        let {action, message_id, user_id, chat_to_be_deleted_id} = req.body
         let message;
 
         const deleteForMe = async () => {
@@ -319,12 +319,9 @@ export const fetchConversationsList = async (req, res) => {
 
         let user_id = req.params.user_id;
         user_id = new mongoose.Types.ObjectId(user_id)
-        const [private_data, group_data] = await Promise.all([
-            fetchConversationListQuery(user_id),
-            fetchGroupConversationListQuery(user_id)
-        ]);
-        const combined_messages = [...private_data, ...group_data];
-        return successResponse(res, combined_messages, `Data fetched successfully!`);
+        const private_data = await fetchConversationListQuery(user_id)
+
+        return successResponse(res, private_data, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

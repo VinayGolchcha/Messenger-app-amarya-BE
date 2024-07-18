@@ -42,9 +42,17 @@ export const socketConnection = async(server)=>{
         socket.on("privateMessage", async({ message, reciever_socket_id, message_type, media_id }) => {
           const recipient_socket = io.sockets.sockets.get(reciever_socket_id);
           const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), findUserDetailQuery(reciever_socket_id)]);
-         
+          const message_data = {
+            senders_id: sender_data._id,
+            recievers_id: reciever_data._id,
+            message_type: message_type,
+            content: message,
+            media_id: media_id ? media_id : null 
+          }
+          const data = await addMessageQuery(message_data)
+
           if (recipient_socket){
-            socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message));
+            socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id));
           }
  
           const id = new mongoose.Types.ObjectId(reciever_data._id)
@@ -56,14 +64,6 @@ export const socketConnection = async(server)=>{
           }else{
             await addMuteDataQuery(sender_data._id, reciever_data._id)
           }
-          const message_data = {
-            senders_id: sender_data._id,
-            recievers_id: reciever_data._id,
-            message_type: message_type,
-            content: message,
-            media_id: media_id ? media_id : null 
-          }
-          await addMessageQuery(message_data)
         });
 
         socket.on("markAsRead", async ({ message_id }) => {
@@ -86,7 +86,17 @@ export const socketConnection = async(server)=>{
         socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
           console.log('message received: ', message);
           const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
-          io.to(group_name).emit('message', buildMsg(user._id, user.username, message))
+          const message_data = {
+            group_id: group_id._id,
+            senders_id: user._id,
+            message_type: message_type,
+            content: message,
+            media_id: media_id ? media_id : null 
+          }
+          const message_cr = await addGroupMessageQuery(message_data)
+          await updateReadByStatusQuery(message_cr._id, user._id)
+
+          io.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
 
           const id = new mongoose.Types.ObjectId(group_id._id)
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
@@ -97,16 +107,6 @@ export const socketConnection = async(server)=>{
           }else{
             await addGroupMuteDataQuery(user._id, id)
           }
-
-          const message_data = {
-            group_id: group_id._id,
-            senders_id: user._id,
-            message_type: message_type,
-            content: message,
-            media_id: media_id ? media_id : null 
-          }
-          const message_cr = await addGroupMessageQuery(message_data)
-          await updateReadByStatusQuery(message_cr._id, user._id)
         });
 
         socket.on('enterGroup', async ({ user_id, group_name }) => {
@@ -143,11 +143,12 @@ export const socketConnection = async(server)=>{
 }
 
 
-function buildMsg(id, name, text) {
+function buildMsg(id, name, text, message_id) {
   return {
       id,
       name,
       text,
+      message_id,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
           minute: 'numeric',
