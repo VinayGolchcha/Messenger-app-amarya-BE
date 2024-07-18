@@ -35,12 +35,9 @@ app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistor
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
-<<<<<<< HEAD
 app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fetchUserProfile);
 app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
  
-=======
->>>>>>> 1ffac39093eace2590fa20ff0b907aca94ca687e
 app.use("/", router);
 
 export default app;
