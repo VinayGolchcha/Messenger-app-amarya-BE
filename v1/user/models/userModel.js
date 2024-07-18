@@ -9,6 +9,16 @@ const UserSchema = new mongoose.Schema({
     is_registered: { type: Boolean, default: true },
     auth_token: { type: String, default: null },
     socket_id: { type: String, default: null},
+    mute_notifications: {
+        direct_messages: [{
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            mute_status: { type: Boolean, default: false }
+        }],
+        groups: [{
+            group_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Groups' },
+            mute_status: { type: Boolean, default: false }
+        }],
+    }
 });
 
 UserSchema.plugin(timestamps);

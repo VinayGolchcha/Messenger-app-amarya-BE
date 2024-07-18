@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
-import {GroupModel} from './groupModel.js';
+import { GroupModel} from './groupModel.js';
 import { GroupMessageModel } from './groupMessagesModel.js';
+import { UserModel } from './userModel.js';
 
 export const createGroupQuery = async (data) => {
     return await GroupModel.create(data);
@@ -50,7 +51,7 @@ export const getGroupDataQuery = async(group_name) => {
 export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
     try {
         let given_date = new Date(date);
-        const max_look_back_days = 30; // Maximum look-back days to avoid infinite loops
+        const max_look_back_days = 30;
         let result = [];
         let required_days = 5;
 
@@ -115,7 +116,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                         sent_at: {
                             $dateToString: {
                                 format: "%H:%M",
-                                date: { $add: ["$sent_at", 19800000] } // IST offset in milliseconds
+                                date: { $add: ["$sent_at", 19800000] }
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
@@ -345,6 +346,125 @@ export const updateReadByStatusQuery = async(id, user_id) => {
         throw error;
     }
 }
+
+export const markAllUnreadMessagesAsReadQuery = async (id, group_name) => {
+    try {
+        const user_id = new mongoose.Types.ObjectId(id);
+        const messagesToUpdate = await GroupMessageModel.aggregate([
+            {
+                $lookup: {
+                    from: 'groups',
+                    localField: 'group_id',
+                    foreignField: '_id',
+                    as: 'group'
+                }
+            },
+            {
+                $unwind: '$group'
+            },
+            {
+                $match: {
+                    'group.group_name': group_name,
+                    senders_id: { $ne: user_id },
+                    read_by: { $ne: user_id }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    read_by: 1
+                }
+            }
+        ]);
+
+        const updatePromises = messagesToUpdate.map(async (msg) => {
+            const message = await GroupMessageModel.findById(msg._id);
+            if (message && !message.read_by.includes(user_id)) {
+                message.read_by.push(user_id);
+                await message.save();
+            }
+        });
+
+        await Promise.all(updatePromises);
+        return { success: true, updatedCount: messagesToUpdate.length };
+    } catch (error) {
+        console.error('Error updating read_by status:', error);
+        throw error;
+    }
+};
+
+export const fetchNewMessagesForGroupNotificationQuery = async (id) => {
+    try {
+        const user_id = new mongoose.Types.ObjectId(id);
+        const user = await UserModel.findById(user_id);
+
+        const userGroups = await GroupModel.find({ members: user_id });
+        const groupIds = userGroups.map(group => group._id);
+
+        const messages = await GroupMessageModel.aggregate([
+            {
+                $match: {
+                    group_id: { $in: groupIds },
+                    senders_id: { $ne: user_id },
+                    read_by: { $ne: user_id }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    let: { group_id: "$group_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$_id", user_id] },
+                                        { $eq: ["$mute_notifications.groups.group_id", "$$group_id"] },
+                                        { $eq: ["$mute_notifications.groups.mute_status", true] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'userMuteStatus'
+                }
+            },
+            {
+                $match: {
+                    "userMuteStatus": { $size: 0 }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'groups',
+                    localField: 'group_id',
+                    foreignField: '_id',
+                    as: 'group'
+                }
+            },
+            {
+                $unwind: '$group'
+            },
+            {
+                $group: {
+                    _id: '$group._id',
+                    group_name: { $first: '$group.group_name' },
+                    reciever_email:{ $first: user.email },
+                    messages: {
+                        $push: {
+                            _id: '$_id',
+                            read_by: '$read_by'
+                        }
+                    }
+                }
+            }
+        ]);
+        return messages;
+    } catch (error) {
+        console.error('Error in fetchNewMessagesForGroupNotificationQuery:', error);
+        throw error;
+    }
+};
 export const fetchGroupDetailQuery = async(group_id) => {
     try {
         return await GroupModel.findOne({_id: group_id}).select('_id group_name created_by members');

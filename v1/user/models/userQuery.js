@@ -99,6 +99,111 @@ export const getAllUsersQuery = async() => {
     }
 }
 
+export const addMuteDataQuery = async(user_id, recievers_id) => {
+    try {
+        const data1 = await UserModel.updateOne(
+            { _id: user_id },
+            {
+                $push: {
+                    "mute_notifications.direct_messages": {
+                        userId: recievers_id
+                    }
+                }
+            },
+            { upsert: true }
+        );
+        const data2 = await UserModel.updateOne(
+            { _id: recievers_id },
+            {
+                $push: {
+                    "mute_notifications.direct_messages": {
+                        userId: user_id
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        return data1, data2
+    } catch (error) {
+        console.error('Error finding addMuteDataQuery details:', error);
+        throw error;
+    }
+}
+
+export const addGroupMuteDataQuery = async(user_id, group_id) => {
+    try {
+        const data1 = await UserModel.updateOne(
+            { _id: user_id },
+            {
+                $push: {
+                    "mute_notifications.groups": {
+                        group_id: group_id
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        return data1
+    } catch (error) {
+        console.error('Error finding addMuteDataQuery details:', error);
+        throw error;
+    }
+}
+
+export const updateNotificationStatusQuery = async (user_id, recievers_id, status) => {
+    try {
+        const updateResult = await UserModel.updateOne({_id: user_id, "mute_notifications.direct_messages.userId": new mongoose.Types.ObjectId(recievers_id)}, {$set: { "mute_notifications.direct_messages.$.mute_status": status}});
+                     
+        if (updateResult.modifiedCount === 0) {
+            const pushUpdate = await UserModel.updateOne(
+                { _id: user_id },
+                {
+                    $push: {
+                        "mute_notifications.direct_messages": {
+                            userId: recievers_id,
+                            mute_status: status
+                        }
+                    }
+                }
+            );
+            return pushUpdate;
+        }
+
+        return updateResult;
+    } catch (error) {
+        console.error('Error updating mute status:', error);
+        throw error;
+    }
+};
+
+export const updateNotificationStatusForGroupQuery = async (user_id, group_id, status) => {
+    try {
+        const updateResult = await UserModel.updateOne({_id: user_id, "mute_notifications.groups.group_id": new mongoose.Types.ObjectId(group_id)}, {$set: { "mute_notifications.groups.$.mute_status": status}});
+                     
+        if (updateResult.modifiedCount === 0) {
+            const pushUpdate = await UserModel.updateOne(
+                { _id: user_id },
+                {
+                    $push: {
+                        "mute_notifications.groups": {
+                            group_id: group_id,
+                            mute_status: status
+                        }
+                    }
+                }
+            );
+            return pushUpdate;
+        }
+
+        return updateResult;
+    } catch (error) {
+        console.error('Error updating mute status:', error);
+        throw error;
+    }
+};
+
 export const fetchUserProfileQuery = async(user_id) => {
     try {
         return await UserModel.findOne({_id:user_id}).select('_id username email socket_id');
