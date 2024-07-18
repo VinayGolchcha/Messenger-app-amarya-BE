@@ -342,9 +342,9 @@ export const fetchUserProfile = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
         const data = await fetchUserProfileQuery(user_id);
         if (data.length == 0){
-            return successResponse(res, data, `No Profile Found In Data `)
+            return notFoundResponse(res, '', `No Profile Found In Data `)
         }
-        return successResponse(res, data, `profile fetched successfully!`);
+        return successResponse(res, data, `Profile fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

@@ -17,6 +17,7 @@ app.post('/user-input', userInput);
 app.get('/logout/:user_id', authenticateToken, userLogout);
 
 //group APIs
+app.get('/fetch-group-data/:group_id', fetchGroupDetailVal,fetchGroupDetail);
 app.post('/create-group', authenticateToken, createGroupVal, createGroup);
 app.post('/fetch-group-chat-history', authenticateToken, fetchGrpChatVal, fetchGroupChatHistory);
 app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessageVal, fetchGroupDataForUser);
@@ -24,6 +25,7 @@ app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
 app.post('/search-message-in-group', searchMessageInGroup);
 
 //user APIS
+app.get('/fetch-user-profile/:user_id', authenticateToken, fetchUserProfileVal, fetchUserProfile);
 app.get('/fetch-conversations/:user_id', fetchConversationsList);
 app.post('/upload-file', upload.single('file'), authenticateToken, uploadFileVal, uploadFiles);
 app.get('/fetch-all-contacts/:user_id', authenticateToken, fetchAllContacts);
@@ -33,9 +35,6 @@ app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistor
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
-app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fetchUserProfile);
-app.get('/fetch-group-data/:group_id',fetchGroupDetailVal,fetchGroupDetail);
- 
 app.use("/", router);
 
 export default app;
