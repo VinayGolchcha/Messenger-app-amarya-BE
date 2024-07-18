@@ -34,7 +34,7 @@ app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchN
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
 app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fetchUserProfile);
-app.get('/fetch-group-data/:group_id',fetchGroupDetailVal,fetchGroupDetail);
+app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
  
 app.use("/", router);
 
