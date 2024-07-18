@@ -1,7 +1,11 @@
 import { Server } from "socket.io"
-import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery} from "./v1/user/models/userQuery.js"
+import mongoose from 'mongoose';
+import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery, 
+  updateNotificationStatusForGroupQuery, updateNotificationStatusQuery,
+  addMuteDataQuery,
+  addGroupMuteDataQuery} from "./v1/user/models/userQuery.js"
 import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
-import { addGroupMessageQuery, getGroupDataQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
+import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 
 export const socketConnection = async(server)=>{
@@ -42,6 +46,16 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message));
           }
+ 
+          const id = new mongoose.Types.ObjectId(reciever_data._id)
+          if (sender_data.mute_notifications != null && sender_data.mute_notifications.direct_messages != null){
+              const exists = sender_data.mute_notifications.direct_messages.some(obj => obj.userId.equals(id) )
+              if(exists === false){
+                await addMuteDataQuery(sender_data._id, reciever_data._id)
+              }
+          }else{
+            await addMuteDataQuery(sender_data._id, reciever_data._id)
+          }
           const message_data = {
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
@@ -58,10 +72,31 @@ export const socketConnection = async(server)=>{
             updateReadByStatusQuery(message_id, user._id)])
         });
 
+        socket.on("muteUnmuteNotifications", async ({ recievers_id, mute_status, group_id }) => {
+          const user = await findUserDetailQuery(socket.id)
+          // await Promise.all([updateNotificationStatusQuery(user._id, recievers_id, mute_status), 
+          //   updateNotificationStatusForGroupQuery(user._id, group_id, mute_status)
+          // ])
+          recievers_id && recievers_id.trim() !== '' ? 
+            await updateNotificationStatusQuery(user._id, recievers_id, mute_status) : ''
+          group_id && group_id.trim() !== '' ? 
+            await updateNotificationStatusForGroupQuery(user._id, group_id, mute_status) : ''
+        });
+
         socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
           console.log('message received: ', message);
           const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
           io.to(group_name).emit('message', buildMsg(user._id, user.username, message))
+
+          const id = new mongoose.Types.ObjectId(group_id._id)
+          if (user.mute_notifications != null && user.mute_notifications.groups != null){
+              const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
+              if (exists === false) {
+                await addGroupMuteDataQuery(user._id, id)
+              }
+          }else{
+            await addGroupMuteDataQuery(user._id, id)
+          }
 
           const message_data = {
             group_id: group_id._id,
@@ -82,6 +117,7 @@ export const socketConnection = async(server)=>{
             socket.join(user[0].group_name)
             socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
             socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
+            await markAllUnreadMessagesAsReadQuery(user_id, group_name)
           } else {
             socket.emit('message', buildMsg(`You have not been able to join due to some error`))
           }
