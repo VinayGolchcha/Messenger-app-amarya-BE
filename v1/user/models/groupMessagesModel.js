@@ -10,7 +10,8 @@ const GroupMessageSchema = new mongoose.Schema({
     content: { type: String, default: null},
     sent_at: { type: Date, default: new Date},
     sender_deleted: { type: Boolean, default: false},
-    read_by: {type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default : []}
+    read_by: {type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default : []},
+    deleted_by_users: {type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default : []}
 });
 
 GroupMessageSchema.plugin(timestamps);

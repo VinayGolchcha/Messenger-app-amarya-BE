@@ -67,13 +67,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                             $gte: currentStartDate,
                             $lt: new Date(given_date.setDate(given_date.getDate() + 1))
                         },
-                        $or: [
-                            { sender_deleted: { $ne: true } },
-                            { $and: [
-                                { senders_id: sender_id },
-                                { sender_deleted: false }
-                            ]}
-                        ]
+                        deleted_by_users: { $ne: sender_id }
                     }
                 },
                 {
@@ -483,6 +477,42 @@ export const fetchGroupDetailQuery = async(group_id) => {
         return await GroupModel.findOne({_id: group_id}).select('_id group_name created_by members');
     } catch (error) {
         console.error('Error finding fetchGroupdetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const deleteGroupMessageByIdQuery = async(message_id) => {
+    try {
+        return await GroupMessageModel.deleteOne({ _id: new mongoose.Types.ObjectId(message_id) });
+    } catch (error) {
+        console.error('Error in deleteGroupMessageByIdQuery details:', error);
+        throw error;
+    }
+}
+
+export const checkIfUserIsAdminQuery = async(user_id) => {
+    try {
+        return await GroupModel.findOne({ created_by: new mongoose.Types.ObjectId(user_id) });
+    } catch (error) {
+        console.error('Error in checkIfUserIsAdminQuery details:', error);
+        throw error;
+    }
+}
+
+export const deleteGroupChatCompleteQuery = async(group_id) => {
+    try {
+        return await GroupMessageModel.deleteMany({ group_id: new mongoose.Types.ObjectId(group_id) });
+    } catch (error) {
+        console.error('Error in deleteGroupChatCompleteQuery details:', error);
+        throw error;
+    }
+}
+
+export const updateDeleteUserStatusForGroupQuery = async(id, user_id) => {
+    try {
+        return await GroupMessageModel.updateOne({_id: id}, { $addToSet: { deleted_by_users: user_id } });
+    } catch (error) {
+        console.error('Error finding updateDeleteUserStatusForGroupQuery details:', error);
         throw error;
     }
 }

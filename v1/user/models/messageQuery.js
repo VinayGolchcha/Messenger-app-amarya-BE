@@ -67,7 +67,7 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
     }
 };
 
-export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
+export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
     try {
         let given_date = new Date(date);
         const max_look_back_days = 30;
@@ -86,17 +86,16 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
             const pipeline = [
                 {
                     $match: {
-                        $or: [
-                            { senders_id: senders_id, recievers_id: recievers_id },
-                            { senders_id: recievers_id, recievers_id: senders_id }
-                        ],
-                        sent_at: { $gte: currentStartDate, $lt: nextDay },
+                        $or: [{senders_id: sender_id, recievers_id: reciever_id }, {senders_id: reciever_id, recievers_id: sender_id}],
+                        'delete_chat.userId': sender_id,
+                        'delete_chat.delete_status': false,
+                        sent_at: { $gte: currentStartDate, $lt: nextDay }
                     }
                 },
                 {
                     $addFields: {
-                        is_sender: { $eq: ["$senders_id", senders_id] },
-                        is_receiver: { $eq: ["$recievers_id", senders_id] }
+                        is_sender: { $eq: ["$senders_id", sender_id] },
+                        is_receiver: { $eq: ["$recievers_id", sender_id] }
                     }
                 },
                 {
@@ -105,7 +104,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                             if: {
                                 $or: [
                                     { $and: [{ $eq: ["$is_sender", true] }, { $eq: ["$sender_deleted", false] }] },
-                                    { $and: [{ $eq: ["$is_receiver", true] }, { $eq: ["$receiver_deleted", false] }] }
+                                    { $and: [{ $eq: ["$is_receiver", true] }, { $eq: ["$reciever_deleted", false] }] }
                                 ]
                             },
                             then: "$$KEEP",
@@ -164,7 +163,7 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
-                        is_sent_by_sender: { $eq: ['$senders_id', senders_id] }
+                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] }
                     }
                 },
                 {
@@ -207,7 +206,6 @@ export const fetchChatHistoryQuery = async (senders_id, recievers_id, date) => {
                 days_with_data++;
             }
 
-            // Adjust given_date for the next iteration
             given_date.setDate(given_date.getDate() - 1);
             attempts++;
         }
@@ -278,9 +276,25 @@ export const deleteMessageByIdQuery = async(message_id) => {
     }
 }
 
-export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id) => {
+export const updateDeleteStatusForAllMessagesInChatQuery = async(user_id, reciever_id) => {
     try {
-        return await MessageModel.updateMany({senders_id: user_id}, { sender_deleted: true }, { safe: true, upsert: true, new: true });
+        return await MessageModel.updateMany(
+            {
+              $or: [
+                { senders_id: user_id, recievers_id: reciever_id },
+                { senders_id: reciever_id, recievers_id: user_id }
+              ],
+                'delete_chat.userId': user_id
+            },
+            {
+              $set: { 'delete_chat.$.delete_status': true }
+            },
+            {
+              safe: true,
+              upsert: false,
+              new: true
+            }
+          );
     } catch (error) {
         console.error('Error finding updateDeleteStatusForAllMessagesInChatQuery details:', error);
         throw error;
@@ -466,7 +480,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 $group: {
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
-                    sender_socket_id: {$first: "$sender.socket_id"},
+                    socket_id: {$first: "$sender.socket_id"},
                     reciever_username: { $first: "$receiver.username" },
                     messages: {
                         $push: {
@@ -498,7 +512,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 $project: {
                     senders_id: "$_id",
                     sender_name: 1,
-                    sender_socket_id: "$sender_socket_id",
+                    socket_id: "$socket_id",
                     reciever_username: 1, 
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
@@ -510,6 +524,30 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
         return await MessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error finding fetchConversationListQuery details:', error);
+        throw error;
+    }
+}
+
+export const addEntryForDeleteChatQuery = async(id, senders_id, receivers_id) => {
+    try {
+        const data1 = await MessageModel.updateOne(
+            {
+                _id: id,
+                senders_id: senders_id, recievers_id: receivers_id,
+            },
+            {
+                $push: {
+                    delete_chat: {$each: [
+                        { userId: senders_id},
+                        { userId: receivers_id}
+                      ]}
+                }
+            },
+            { upsert: true }
+        );
+        return data1
+    } catch (error) {
+        console.error('Error in addEntryForDeleteChatQuery details:', error);
         throw error;
     }
 }

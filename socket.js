@@ -4,7 +4,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
   updateNotificationStatusForGroupQuery, updateNotificationStatusQuery,
   addMuteDataQuery,
   addGroupMuteDataQuery} from "./v1/user/models/userQuery.js"
-import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
+import {addEntryForDeleteChatQuery, addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 
@@ -54,6 +54,8 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id));
           }
+
+          await addEntryForDeleteChatQuery(data._id, sender_data._id, reciever_data._id)
  
           const id = new mongoose.Types.ObjectId(reciever_data._id)
           if (sender_data.mute_notifications != null && sender_data.mute_notifications.direct_messages != null){
@@ -65,6 +67,7 @@ export const socketConnection = async(server)=>{
             await addMuteDataQuery(sender_data._id, reciever_data._id)
           }
         });
+
 
         socket.on("markAsRead", async ({ message_id }) => {
           const user = await findUserDetailQuery(socket.id)

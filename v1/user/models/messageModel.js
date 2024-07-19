@@ -12,7 +12,11 @@ const MessageSchema = new mongoose.Schema({
     is_new: { type: Boolean, default: true},
     sent_at: { type: Date, default: new Date},
     sender_deleted: { type: Boolean, default: false},
-    reciever_deleted: { type: Boolean, default: false}
+    reciever_deleted: { type: Boolean, default: false},
+    delete_chat: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        delete_status: { type: Boolean, default: false }
+    }]
 });
 
 MessageSchema.plugin(timestamps);
