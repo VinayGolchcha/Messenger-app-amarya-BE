@@ -103,8 +103,25 @@ export const fetchGroupDataForUser = async (req, res) => {
 
         let user_id = req.params.user_id;
         user_id = new mongoose.Types.ObjectId(user_id);
+        const group_data = await fetchGroupsDataForUserQuery(user_id);
         const data = await fetchGroupConversationListQuery(user_id);
-        return successResponse(res, data, `Group Data fetched successfully!`);
+      
+        const mergeArrays = (arr1, arr2) => {
+            const map = new Map();
+            arr1.forEach(obj => {
+              map.set(obj.group_id.toString(), obj);
+            });
+        
+            arr2.forEach(obj => {
+              map.set(obj.group_id.toString(), obj);
+            });
+        
+            const mergedArray = Array.from(map.values());
+            return mergedArray;
+          };
+          const mergedArray = mergeArrays(group_data, data);
+          
+        return successResponse(res, mergedArray, `Group Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

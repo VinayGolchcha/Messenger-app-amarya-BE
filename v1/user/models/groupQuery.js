@@ -184,12 +184,15 @@ export const fetchGroupsDataForUserQuery = async(user_id) => {
             },
             {
                 $project: {
-                    _id: 1,
+                    sender_name: null, 
+                    group_id: '$_id',
                     group_name: 1,
                     members: 1,
                     created_by: 1,
-                    createdAt: 1,
-                    updatedAt: 1
+                    new_messages_count: null,
+                    senders_id: null,
+                    sender_socket_id: null, 
+                    messages: []
                 }
             },
             {
