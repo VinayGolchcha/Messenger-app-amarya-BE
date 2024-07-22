@@ -96,8 +96,36 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'replymessages',
+                        localField: '_id',
+                        foreignField: 'message_replied_on_group_id',
+                        as: 'replied_message_info'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message_info',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'groupmessages',
+                        localField: 'replied_message_info.replied_message_id',
+                        foreignField: '_id',
+                        as: 'replied_message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $project: {
-                        _id: 1,
+                        message_id: "$_id",
                         group_id: 1,
                         senders_id: 1,
                         'sender.username': 1,
@@ -115,7 +143,19 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
-                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] }
+                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
+                        replied_message: {
+                            message_id: "$replied_message._id",
+                            senders_id: "$replied_message.senders_id",
+                            content: "$replied_message.content",
+                            time: {
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: "$replied_message.sent_at",
+                                    timezone: "+05:30"
+                                }
+                            }
+                        }
                     }
                 },
                 {
@@ -126,7 +166,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                         _id: "$date",
                         messages: {
                             $push: {
-                                _id: "$_id",
+                                message_id: "$message_id",
                                 group_id: "$group_id",
                                 senders_id: "$senders_id",
                                 sender_name: "$sender.username",
@@ -139,7 +179,8 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                                     file_buffer: "$media.file_data"
                                 },
                                 time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender"
+                                is_sent_by_sender: "$is_sent_by_sender",
+                                replied_message: "$replied_message"
                             }
                         }
                     }

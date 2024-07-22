@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import {MessageModel} from './messageModel.js';
+import {ReplyMessageModel} from './replyMessageModel.js'
 
 export const addMessageQuery = async (message_data) => {
     try{
@@ -144,8 +145,36 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'replymessages',
+                        localField: '_id',
+                        foreignField: 'message_replied_on_id',
+                        as: 'replied_message_info'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message_info',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'messages',
+                        localField: 'replied_message_info.replied_message_id',
+                        foreignField: '_id',
+                        as: 'replied_message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $project: {
-                        _id: 1,
+                        message_id: "$_id",
                         senders_id: 1,
                         sender_name: { $arrayElemAt: ['$sender.username', 0] },
                         recievers_id: 1,
@@ -165,7 +194,19 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
-                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] }
+                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
+                        replied_message: {
+                            message_id: "$replied_message._id",
+                            senders_id: "$replied_message.senders_id",
+                            content: "$replied_message.content",
+                            time: {
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: "$replied_message.sent_at",
+                                    timezone: "+05:30"
+                                }
+                            }
+                        }
                     }
                 },
                 {
@@ -176,7 +217,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                         _id: "$date",
                         messages: {
                             $push: {
-                                _id: "$_id",
+                                message_id: "$message_id",
                                 senders_id: "$senders_id",
                                 sender_name: "$sender_name",
                                 recievers_id: "$recievers_id",
@@ -191,7 +232,8 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                                     file_buffer: "$media.file_data"
                                 },
                                 time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender"
+                                is_sent_by_sender: "$is_sent_by_sender",
+                                replied_message: "$replied_message"
                             }
                         }
                     }
@@ -551,6 +593,109 @@ export const addEntryForDeleteChatQuery = async(id, senders_id, receivers_id) =>
         return data1
     } catch (error) {
         console.error('Error in addEntryForDeleteChatQuery details:', error);
+        throw error;
+    }
+}
+
+export const addRepliedMessageDetailQuery = async(id, message_id) => {
+    try {
+        const data = {
+            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_id: new mongoose.Types.ObjectId(message_id)
+        }
+            return await ReplyMessageModel.create(data);
+    } catch (error) {
+        console.error('Error in addRepliedMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const repliedMessageDetailQuery = async(id) => {
+    try {
+        let object_id = new mongoose.Types.ObjectId(id);
+            const pipeline = [
+                {
+                    $match: { 
+                        replied_message_id: object_id
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'messages',
+                        localField: 'replied_message_id',
+                        foreignField: '_id',
+                        as: 'message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$message'
+                    }
+                },
+                {
+                    $project: {
+                        senders_id: "$message.senders_id",
+                        recievers_id: "$message.recievers_id",
+                        message_type: "$message.message_type",
+                        media_id: "$message.media_id", 
+                        content: "$message.content"
+                    }
+                }
+            ];
+    
+            return await ReplyMessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error in repliedMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const addRepliedGroupMessageDetailQuery = async(id, group_id) => {
+    try {
+        const data = {
+            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_group_id: new mongoose.Types.ObjectId(group_id)
+        }
+            return await ReplyMessageModel.create(data);
+    } catch (error) {
+        console.error('Error in addRepliedGroupMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const repliedGroupMessageDetailQuery = async(id) => {
+    try {
+        let object_id = new mongoose.Types.ObjectId(id);
+            const pipeline = [
+                {
+                    $match: { 
+                        replied_message_id: object_id
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'groupmessages',
+                        localField: 'replied_message_id',
+                        foreignField: '_id',
+                        as: 'message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$message'
+                    }
+                },
+                {
+                    $project: {
+                        senders_id: "$message.senders_id",
+                        message_type: "$message.message_type",
+                        media_id: "$message.media_id", 
+                        content: "$message.content"
+                    }
+                }
+            ];
+    
+            return await ReplyMessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error in repliedMessageDetailQuery details:', error);
         throw error;
     }
 }
