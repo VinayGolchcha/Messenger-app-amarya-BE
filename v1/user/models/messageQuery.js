@@ -53,7 +53,8 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
                     time: {
                         $dateToString: {
                             format: "%H:%M",
-                            date: { $add: ["$sent_at", 19800000] }
+                            date: "$sent_at",
+                            timezone: "+05:30"
                         }
                     }
                 }
@@ -159,7 +160,8 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                         sent_at: {
                             $dateToString: {
                                 format: "%H:%M",
-                                date: { $add: ["$sent_at", 19800000] }
+                                date: "$sent_at",
+                                timezone: "+05:30"
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
@@ -493,10 +495,11 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
-                            time:{
+                            time: {
                                 $dateToString: {
                                     format: "%H:%M",
-                                    date: { $add: ["$sent_at", 19800000] }
+                                    date: "$sent_at",
+                                    timezone: "+05:30"
                                 }
                             }
                         }

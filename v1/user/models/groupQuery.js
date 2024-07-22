@@ -110,7 +110,8 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                         sent_at: {
                             $dateToString: {
                                 format: "%H:%M",
-                                date: { $add: ["$sent_at", 19800000] }
+                                date: "$sent_at",
+                                timezone: "+05:30"
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
@@ -309,7 +310,8 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                             time: {
                                 $dateToString: {
                                     format: "%H:%M",
-                                    date: { $add: ["$sent_at", 19800000] }
+                                    date: "$sent_at",
+                                    timezone: "+05:30"
                                 }
                             }
                         }
