@@ -115,17 +115,25 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
-                    $lookup: {
-                        from: 'media',
-                        localField: 'media_id',
-                        foreignField: '_id',
-                        as: 'media'
+                    $addFields: {
+                        media_id: { $ifNull: ["$media_id", []] }
                     }
                 },
                 {
-                    $unwind: {
-                        path: '$media',
-                        preserveNullAndEmptyArrays: true
+                    $lookup: {
+                        from: 'media',
+                        let: { media_ids: "$media_id" },
+                        pipeline: [
+                            { $match: { $expr: { $in: ["$_id", "$$media_ids"] } } },
+                            {
+                                $project: {
+                                    file_type: 1,
+                                    file_name: 1,
+                                    file_data: 1
+                                }
+                            }
+                        ],
+                        as: 'media'
                     }
                 },
                 {
@@ -178,14 +186,11 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                         senders_id: 1,
                         sender_name: { $arrayElemAt: ['$sender.username', 0] },
                         recievers_id: 1,
-                        receiver_name:  { $arrayElemAt: ['$receiver.username', 0] },
+                        receiver_name: { $arrayElemAt: ['$receiver.username', 0] },
                         content: 1,
                         message_type: 1,
                         is_read: 1,
-                        media_id: 1,
-                        'media.file_type': 1,
-                        'media.file_name': 1,
-                        'media.file_data': 1,
+                        media: 1,
                         sent_at: {
                             $dateToString: {
                                 format: "%H:%M",
@@ -225,12 +230,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                                 content: "$content",
                                 message_type: "$message_type",
                                 is_read: "$is_read",
-                                media_id: "$media_id",
-                                media_details: {
-                                    file_type: "$media.file_type",
-                                    file_name: "$media.file_name",
-                                    file_buffer: "$media.file_data"
-                                },
+                                media: "$media",
                                 time: "$sent_at",
                                 is_sent_by_sender: "$is_sent_by_sender",
                                 replied_message: "$replied_message"

@@ -116,25 +116,30 @@ export const uploadFiles = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        const file = req.file;
+        const files = req.files;
+        console.log(files)
         let file_type = req.body.file_type
         let user_id = req.body.user_id;
-
+        let response = []
         user_id = new mongoose.Types.ObjectId(user_id)
-        const files_data = {
-            file_type : file_type,
-            file_name : file.originalname,
-            file_data : file.buffer,
-            uploaded_by: user_id
-        }
+
+        for (let image of files){
+            const files_data = {
+                file_type : file_type,
+                file_name : image.originalname,
+                file_data : image.buffer,
+                uploaded_by: user_id
+            }
         const data = await uploadMediaQuery(files_data)
-        const response = {
-            _id: data._id,
-            file_type: data.file_type,
-            file_name: data.file_name,
-            uploaded_by:data.uploaded_by,
-            uploaded_at:data.uploaded_at,
+        response.push(data)
         }
+
+            // _id: data._id,
+        //     file_type: data.file_type,
+        //     file_name: data.file_name,
+        //     uploaded_by:data.uploaded_by,
+        //     uploaded_at:data.uploaded_at,
+        // }
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
         console.error(error);

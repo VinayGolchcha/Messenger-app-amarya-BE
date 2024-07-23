@@ -132,7 +132,7 @@ export const socketConnection = async(server)=>{
             message_type: message_type,
             content: message,
             sent_at: utcTime,
-            media_id: media_id ? media_id : null 
+            media_id: media_id ? media_id : null
           }
           const message_cr = await addGroupMessageQuery(message_data)
           await updateReadByStatusQuery(message_cr._id, user._id)

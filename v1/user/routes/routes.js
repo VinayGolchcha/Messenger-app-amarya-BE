@@ -27,7 +27,7 @@ app.post('/search-message-in-group', searchMessageInGroup);
 //user APIS
 app.get('/fetch-user-profile/:user_id', fetchUserProfileVal, fetchUserProfile);
 app.get('/fetch-conversations/:user_id', fetchConversationsList);
-app.post('/upload-file', upload.single('file'), authenticateToken, uploadFileVal, uploadFiles);
+app.post('/upload-file', upload.array('files', 5), authenticateToken, uploadFileVal, uploadFiles);
 app.get('/fetch-all-contacts/:user_id', authenticateToken, fetchAllContacts);
 app.post('/search-in-contacts/:user_id', authenticateToken, searchVal,  searchInContacts);
 app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMessages);
