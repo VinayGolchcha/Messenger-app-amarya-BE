@@ -1,10 +1,12 @@
 import { Server } from "socket.io"
 import mongoose from 'mongoose';
+import moment from 'moment-timezone';
 import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery, 
   updateNotificationStatusForGroupQuery, updateNotificationStatusQuery,
   addMuteDataQuery,
-  addGroupMuteDataQuery} from "./v1/user/models/userQuery.js"
-import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
+  addGroupMuteDataQuery,
+  userDataQuery} from "./v1/user/models/userQuery.js"
+import {addEntryForDeleteChatQuery, addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById } from "../models/voiceQuery";
@@ -39,21 +41,26 @@ export const socketConnection = async(server)=>{
           console.log(event, args);
         });
 
-        socket.on("privateMessage", async({ message, reciever_socket_id, message_type, media_id }) => {
-          const recipient_socket = io.sockets.sockets.get(reciever_socket_id);
-          const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), findUserDetailQuery(reciever_socket_id)]);
+        socket.on("privateMessage", async({ message, reciever_id, message_type, media_id }) => {
+          const istTime = moment.tz('Asia/Kolkata');
+          const utcTime = istTime.utc().toDate();
+          const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), userDataQuery(reciever_id)]);
+          const recipient_socket = io.sockets.sockets.get(reciever_data.socket_id);
           const message_data = {
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
             message_type: message_type,
             content: message,
+            sent_at: utcTime,
             media_id: media_id ? media_id : null 
           }
           const data = await addMessageQuery(message_data)
 
           if (recipient_socket){
-            socket.to(reciever_socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id));
+            socket.to(reciever_data.socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id));
           }
+
+          await addEntryForDeleteChatQuery(data._id, sender_data._id, reciever_data._id)
  
           const id = new mongoose.Types.ObjectId(reciever_data._id)
           if (sender_data.mute_notifications != null && sender_data.mute_notifications.direct_messages != null){
@@ -65,6 +72,7 @@ export const socketConnection = async(server)=>{
             await addMuteDataQuery(sender_data._id, reciever_data._id)
           }
         });
+
 
         socket.on("markAsRead", async ({ message_id }) => {
           const user = await findUserDetailQuery(socket.id)
@@ -85,12 +93,15 @@ export const socketConnection = async(server)=>{
 
         socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
           console.log('message received: ', message);
+          const istTime = moment.tz('Asia/Kolkata');
+          const utcTime = istTime.utc().toDate();
           const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
           const message_data = {
             group_id: group_id._id,
             senders_id: user._id,
             message_type: message_type,
             content: message,
+            sent_at: utcTime,
             media_id: media_id ? media_id : null 
           }
           const message_cr = await addGroupMessageQuery(message_data)

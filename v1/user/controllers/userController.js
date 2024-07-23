@@ -8,7 +8,7 @@ import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findU
 import { uploadMediaQuery } from "../models/mediaQuery.js";
 import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, 
     deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery} from "../models/messageQuery.js";
-import { fetchGroupConversationListQuery, findGroupByNameQuery } from "../models/groupQuery.js";
+import { checkIfUserIsAdminQuery, deleteGroupChatCompleteQuery, deleteGroupMessageByIdQuery, fetchGroupConversationListQuery, findGroupByNameQuery, updateDeleteUserStatusForGroupQuery } from "../models/groupQuery.js";
 
 dotenv.config();
 
@@ -248,46 +248,90 @@ export const deleteMessages = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        let {action, message_id, user_id, chat_to_be_deleted_id} = req.body
+        let { type, action, message_ids, user_id, chat_to_be_deleted_id} = req.body
         let message;
-
+        type = type.toLowerCase();
         const deleteForMe = async () => {
-            message_id = new mongoose.Types.ObjectId(message_id)
             user_id = new mongoose.Types.ObjectId(user_id)
-            const is_user = await checkUserForGivenMessageQuery(user_id, message_id)
-
-            if (is_user) {
-                const is_user_sender = is_user.senders_id.toString() == user_id.toString() ? true: false;
-                await updateDeleteStatusForUserQuery(is_user_sender, message_id)
-                message = `Message deleted successfully`
+            if (type =='private') {
+                for (let i = 0; i < message_ids.length; i++) {
+                    let message_id = new mongoose.Types.ObjectId(message_ids[i])
+                    const is_user = await checkUserForGivenMessageQuery(user_id, message_id)
+                    if (is_user) {
+                        const is_user_sender = is_user.senders_id.toString() == user_id.toString() ? true : false;
+                        await updateDeleteStatusForUserQuery(is_user_sender, message_id)
+                        message = `Message(s) deleted successfully`
+                    } else {
+                        message = `No message with that id found`
+                    }
+                }
+                return message
+            }else if( type == 'group'){
+                for (let i = 0; i < message_ids.length; i++) {
+                    let message_id = new mongoose.Types.ObjectId(message_ids[i])
+                    const message_deleted = await updateDeleteUserStatusForGroupQuery(message_id, user_id)
+                    if (message_deleted) {
+                        message = `Message(s) deleted successfully`
+                    } else {
+                        message = `No message with that id found`
+                    }
+                }
                 return message
             }
-            message = `No message with that id found`
-            return message
         }
 
         const deleteForEveryone = async () => {
-            message_id = new mongoose.Types.ObjectId(message_id)
-            const is_deleted = await deleteMessageByIdQuery(message_id)
-
-            if (is_deleted) {
-                message = `Message deleted successfully`
+            if(type == 'private'){
+                for (let i = 0; i < message_ids.length; i++) {
+                    let message_id = new mongoose.Types.ObjectId(message_ids[i])
+                    const is_deleted = await deleteMessageByIdQuery(message_id)
+    
+                    if (is_deleted.deletedCount > 0) {
+                        message = `Message deleted successfully`
+                    }else{
+                        message = `No message with that id found`
+                    }
+                }
                 return message
-            }
-            message = `No message with that id found`
-            return message
+            }else if( type == 'group'){
+                for (let i = 0; i < message_ids.length; i++) {
+                    let message_id = new mongoose.Types.ObjectId(message_ids[i])
+                    const is_deleted = await deleteGroupMessageByIdQuery(message_id)
+
+                    if (is_deleted.deletedCount > 0) {
+                        message = `Message deleted successfully`
+                    }else{
+                        message = `No message with that id found`
+                    }
+                }
+                return message
+            } 
         }
 
         const deleteChat = async () => {
             user_id = new mongoose.Types.ObjectId(user_id)
-            const is_deleted = await updateDeleteStatusForAllMessagesInChatQuery(user_id)
-
-            if (is_deleted.modifiedCount > 0) {
-                message = `Message deleted successfully`
+            if(type == 'private'){
+                const reciever_id = new mongoose.Types.ObjectId(chat_to_be_deleted_id)
+                const is_deleted = await updateDeleteStatusForAllMessagesInChatQuery(user_id, reciever_id)
+    
+                if (is_deleted.modifiedCount > 0) {
+                    message = `Message deleted successfully`
+                    return message
+                }
+                message = `No messages found`
                 return message
+            }else if(type == 'group'){
+                const group_id = new mongoose.Types.ObjectId(chat_to_be_deleted_id)
+                const check_admin = await checkIfUserIsAdminQuery(user_id)
+                if(check_admin){
+                    await deleteGroupChatCompleteQuery(group_id)
+                    message = `Message deleted successfully`
+                    return message
+                }else{
+                    message = `Only group admins have the authority to delete all chats in the group.`
+                    return message
+                }
             }
-            message = `No messages found`
-            return message
         }
 
         switch(action){
