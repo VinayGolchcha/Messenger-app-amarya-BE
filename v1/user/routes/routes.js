@@ -7,7 +7,7 @@ import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
 import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail} from '../controllers/groupController.js';
 import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal } from '../../../utils/validation.js';
-
+import {initiateCall, answerCall, rejectCall, endCall} from '../controllers/voiceController.js';
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -35,12 +35,19 @@ app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistor
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
-<<<<<<< HEAD
+
 app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fetchUserProfile);
 app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
+
+//voice call api
+router.post("/call-initiate", initiateCall);
+router.post("/call-answer", answerCall);
+router.post("/call-reject", rejectCall);
+router.post("/call-end", endCall);
+
+
  
-=======
->>>>>>> 1ffac39093eace2590fa20ff0b907aca94ca687e
+
 app.use("/", router);
 
 export default app;

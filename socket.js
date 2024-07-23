@@ -7,7 +7,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
 import {addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
-
+import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById } from "../models/voiceQuery";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -135,13 +135,55 @@ export const socketConnection = async(server)=>{
             socket.emit('message', buildMsg(`You have not been able to leave due to some error`))
           }
         })
-      
+
+      //call handle 
+
+    socket.on("initiateCall", async ({ caller_id, callee_id }) => {
+      const call_data = {
+        caller_id,
+        callee_id,
+        status: "initiated",
+        start_time: new Date()
+      };
+      const call = await logCallQuery(call_data);
+
+      const callee_socket = await findUserDetailQuery(callee_id);
+      if (callee_socket) {
+        socket.to(callee_socket.socket_id).emit("incomingCall", { call_id: call._id, caller_id, start_time: call.start_time });
+      }
+
+      socket.emit("callInitiated", { call_id: call._id });
+    });
+
+    socket.on("answerCall", async ({ call_id }) => {
+      await updateCallStatusQuery(call_id, "answered");
+
+      socket.broadcast.emit("callAnswered", { call_id });
+    });
+
+    socket.on("rejectCall", async ({ call_id }) => {
+      await updateCallStatusQuery(call_id, "rejected");
+
+      socket.broadcast.emit("callRejected", { call_id });
+    });
+
+    socket.on("endCall", async ({ call_id }) => {
+      const end_time = new Date();
+      await updateCallEndQuery(call_id, end_time);
+
+      const call = await findCallById(call_id);
+      const duration = (end_time - call.start_time) / 1000; // duration in seconds
+
+      await updateCallEndQuery(call_id, end_time, duration);
+
+      socket.broadcast.emit("callEnded", { call_id, duration });
+    });
+
         socket.on('disconnect', () => {
           console.log(`user disconnected, ${socket.id}`);
         });
       });
 }
-
 
 function buildMsg(id, name, text, message_id) {
   return {
