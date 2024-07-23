@@ -9,7 +9,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
 import {addEntryForDeleteChatQuery, addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
-import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById } from "../models/voiceQuery";
+import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById } from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -62,7 +62,7 @@ export const socketConnection = async(server)=>{
 
           await addEntryForDeleteChatQuery(data._id, sender_data._id, reciever_data._id)
  
-          const id = new mongoose.Types.ObjectId(reciever_data._id)
+          const id = new new mongoose.Types.ObjectId(reciever_data._id)
           if (sender_data.mute_notifications != null && sender_data.mute_notifications.direct_messages != null){
               const exists = sender_data.mute_notifications.direct_messages.some(obj => obj.userId.equals(id) )
               if(exists === false){
@@ -109,7 +109,7 @@ export const socketConnection = async(server)=>{
 
           io.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
 
-          const id = new mongoose.Types.ObjectId(group_id._id)
+          const id = new new mongoose.Types.ObjectId(group_id._id)
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
               const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
               if (exists === false) {
@@ -150,12 +150,19 @@ export const socketConnection = async(server)=>{
       //call handle 
 
     socket.on("initiateCall", async ({ caller_id, callee_id }) => {
+      let status;
+      let start_time;
+      caller_id = new mongoose.Types.ObjectId(caller_id);
+      callee_id = new mongoose.Types.ObjectId(callee_id);
+      status= "initiated",
+      start_time= new Date()
       const call_data = {
         caller_id,
         callee_id,
-        status: "initiated",
-        start_time: new Date()
+        status,
+        start_time
       };
+
       const call = await logCallQuery(call_data);
 
       const callee_socket = await findUserDetailQuery(callee_id);

@@ -6,8 +6,8 @@ const voiceSchema = new mongoose.Schema({
   caller_id: { type: Schema.Types.ObjectId,   ref: 'User',required: true },
   callee_id: { type: Schema.Types.ObjectId,  ref: 'User', required: true },
   start_time: { type: Date, required: true },
-  end_time: { type: Date, required: true },
-  duration: { type: Number, required: true }
+  end_time: { type: Date },
+  duration: { type: Number  }
 });
 
 voiceSchema.plugin(timestamps);

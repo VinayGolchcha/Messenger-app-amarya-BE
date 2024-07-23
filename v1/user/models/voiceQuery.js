@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { VoiceModel } from './voiceModel';
+import { VoiceModel } from './voiceModel.js';
 
 export const logCallQuery = async (callData) => {
     try {

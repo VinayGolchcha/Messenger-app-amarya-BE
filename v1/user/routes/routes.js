@@ -40,10 +40,10 @@ app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fet
 app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
 
 //voice call api
-router.post("/call-initiate", initiateCall);
-router.post("/call-answer", answerCall);
-router.post("/call-reject", rejectCall);
-router.post("/call-end", endCall);
+app.post("/call-initiate", initiateCall);
+app.post("/call-answer", answerCall);
+app.post("/call-reject", rejectCall);
+app.post("/call-end", endCall);
 
 
  
