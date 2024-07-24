@@ -9,7 +9,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
 import {addEntryForDeleteChatQuery, addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
-import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById } from "./v1/user/models/voiceQuery.js";
+import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -149,52 +149,92 @@ export const socketConnection = async(server)=>{
 
       //call handle 
 
-    socket.on("initiateCall", async ({ caller_id, callee_id }) => {
-      let status;
-      let start_time;
-      caller_id = new mongoose.Types.ObjectId(caller_id);
-      callee_id = new mongoose.Types.ObjectId(callee_id);
-      status= "initiated",
-      start_time= new Date()
-      const call_data = {
-        caller_id,
-        callee_id,
-        status,
-        start_time
-      };
-
-      const call = await logCallQuery(call_data);
-
-      const callee_socket = await findUserDetailQuery(callee_id);
-      if (callee_socket) {
-        socket.to(callee_socket.socket_id).emit("incomingCall", { call_id: call._id, caller_id, start_time: call.start_time });
-      }
-
-      socket.emit("callInitiated", { call_id: call._id });
+      socket.on("initiateCall", async ({ caller_id, callee_id }) => {
+        try {
+            let status = "initiated";
+            let start_time = new Date();
+            caller_id = new mongoose.Types.ObjectId(caller_id);
+            callee_id = new mongoose.Types.ObjectId(callee_id);
+    
+            const call_data = {
+                caller_id,
+                callee_id,
+                status,
+                start_time
+            };
+    
+            const call = await logCallQuery(call_data);
+    
+            const callee_socket = await findUserDetailQuery(callee_id);
+    
+            if (callee_socket) {
+                socket.to(callee_socket.socket_id).emit("incomingCall", {
+                    call_id: call._id,
+                    caller_id,
+                    start_time: call.start_time
+                });
+            }
+    
+            // Notify the caller that the call has been initiated
+            socket.emit("callInitiated", {
+                call_id: call._id,
+                callee_id,
+                start_time: call.start_time
+            });
+    
+        } catch (error) {
+            console.error("Error initiating call:", error);
+            socket.emit("callError", { message: "Error initiating call" });
+        }
     });
-
+    
+    
+    // Handle answering of a call
     socket.on("answerCall", async ({ call_id }) => {
-      await updateCallStatusQuery(call_id, "answered");
-
-      socket.broadcast.emit("callAnswered", { call_id });
+        await updateCallStatusQuery(call_id, "answered");
+    
+        const call = await findCallById(call_id);
+        const callee_socket = await findUserDetailQuery(call.callee_id);
+        if (callee_socket) {
+            socket.to(callee_socket.socket_id).emit("callAnswered", { call_id });
+        }
+    
+        socket.emit("callAnswered", { call_id });
     });
-
+    
+    // Handle rejection of a call
     socket.on("rejectCall", async ({ call_id }) => {
-      await updateCallStatusQuery(call_id, "rejected");
-
-      socket.broadcast.emit("callRejected", { call_id });
+        await updateCallStatusQuery(call_id, "rejected");
+    
+        const call = await findCallById(call_id);
+        const caller_socket = await findUserDetailQuery(call.caller_id);
+        if (caller_socket) {
+            socket.to(caller_socket.socket_id).emit("callRejected", { call_id });
+        }
+    
+        socket.emit("callRejected", { call_id });
     });
-
+    
+    // Handle ending of a call
     socket.on("endCall", async ({ call_id }) => {
-      const end_time = new Date();
-      await updateCallEndQuery(call_id, end_time);
-
-      const call = await findCallById(call_id);
-      const duration = (end_time - call.start_time) / 1000; // duration in seconds
-
-      await updateCallEndQuery(call_id, end_time, duration);
-
-      socket.broadcast.emit("callEnded", { call_id, duration });
+        const end_time = new Date();
+        await updateCallEndQuery(call_id, end_time);
+    
+        const call = await findCallById(call_id);
+        const duration = (end_time - call.start_time) / 1000; // duration in seconds
+    
+        await updateCallEndQuery(call_id, end_time, duration);
+    
+        const caller_socket = await findUserDetailQuery(call.caller_id);
+        const callee_socket = await findUserDetailQuery(call.callee_id);
+        if (caller_socket) {
+            socket.to(caller_socket.socket_id).emit("callEnded", { call_id, duration });
+        }
+        if (callee_socket) {
+            socket.to(callee_socket.socket_id).emit("callEnded", { call_id, duration });
+        }
+    
+        socket.emit("callEnded", { call_id, duration });
     });
 
         socket.on('disconnect', () => {
