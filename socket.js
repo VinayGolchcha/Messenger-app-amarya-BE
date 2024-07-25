@@ -164,7 +164,6 @@ export const socketConnection = async(server)=>{
             };
     
             const call = await logCallQuery(call_data);
-    
             const callee_socket = await findUserDetailQuery(callee_id);
     
             if (callee_socket) {
@@ -188,21 +187,32 @@ export const socketConnection = async(server)=>{
         }
     });
     
-    
-    // Handle answering of a call
+    // Handle call answering
     socket.on("answerCall", async ({ call_id }) => {
-        await updateCallStatusQuery(call_id, "answered");
+        try {
+            await updateCallStatusQuery(call_id, "answered");
     
-        const call = await findCallById(call_id);
-        const callee_socket = await findUserDetailQuery(call.callee_id);
-        if (callee_socket) {
-            socket.to(callee_socket.socket_id).emit("callAnswered", { call_id });
+            const call = await findCallById(call_id);
+            const caller_socket = await findUserDetailQuery(call.caller_id);
+            const callee_socket = await findUserDetailQuery(call.callee_id);
+    
+            if (caller_socket) {
+                io.to(caller_socket.socket_id).emit("callAnswered", { call_id });
+            }
+    
+            if (callee_socket) {
+                socket.to(callee_socket.socket_id).emit("callAnswered", { call_id });
+            }
+    
+            socket.emit("callAnswered", { call_id });
+    
+        } catch (error) {
+            console.error("Error answering call:", error);
+            socket.emit("callError", { message: "Error answering call" });
         }
-    
-        socket.emit("callAnswered", { call_id });
     });
-    
-    // Handle rejection of a call
+
+    // Handle call rejection
     socket.on("rejectCall", async ({ call_id }) => {
         await updateCallStatusQuery(call_id, "rejected");
     
@@ -214,8 +224,8 @@ export const socketConnection = async(server)=>{
     
         socket.emit("callRejected", { call_id });
     });
-    
-    // Handle ending of a call
+
+    // Handle call ending
     socket.on("endCall", async ({ call_id }) => {
         const end_time = new Date();
         await updateCallEndQuery(call_id, end_time);
@@ -237,11 +247,31 @@ export const socketConnection = async(server)=>{
         socket.emit("callEnded", { call_id, duration });
     });
 
+    // Handle SDP Offer from Caller
+    socket.on('callInitiated', ({ offer, recipientId }) => {
+        io.to(recipientId).emit('callInitiated', { offer, callerId: socket.id });
+    });
+
+    // Handle SDP Answer from Callee
+    socket.on('callAnswered', ({ answer, callerId }) => {
+        io.to(callerId).emit('callAnswered', { answer });
+    });
+
+    // Handle ICE Candidates
+    socket.on('iceCandidate', (candidate) => {
+        socket.broadcast.emit('iceCandidate', candidate);
+    });
+
+    // Handle audio detection
+    socket.on('audioDetected', ({ recipientId }) => {
+        io.to(recipientId).emit('audioDetected', { message: 'Audio is coming through' });
+    });
+
         socket.on('disconnect', () => {
           console.log(`user disconnected, ${socket.id}`);
         });
       });
-}
+    }
 
 function buildMsg(id, name, text, message_id) {
   return {
