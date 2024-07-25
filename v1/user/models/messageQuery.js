@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import {MessageModel} from './messageModel.js';
+import {ReplyMessageModel} from './replyMessageModel.js'
 
 export const addMessageQuery = async (message_data) => {
     try{
@@ -68,29 +69,14 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
     }
 };
 
-export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
+export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit) => {
     try {
-        let given_date = new Date(date);
-        const max_look_back_days = 30;
-        const required_days_of_data = 5;
-        let result = [];
-        let attempts = 0;
-        let days_with_data = 0;
-
-        while (attempts < max_look_back_days && days_with_data < required_days_of_data) {
-            let currentStartDate = new Date(given_date);
-            currentStartDate.setHours(0, 0, 0, 0);
-            let nextDay = new Date(given_date);
-            nextDay.setDate(nextDay.getDate() + 1);
-            nextDay.setHours(0, 0, 0, 0);
-
             const pipeline = [
                 {
                     $match: {
                         $or: [{senders_id: sender_id, recievers_id: reciever_id }, {senders_id: reciever_id, recievers_id: sender_id}],
                         'delete_chat.userId': sender_id,
-                        'delete_chat.delete_status': false,
-                        sent_at: { $gte: currentStartDate, $lt: nextDay }
+                        'delete_chat.delete_status': false
                     }
                 },
                 {
@@ -114,17 +100,25 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
-                    $lookup: {
-                        from: 'media',
-                        localField: 'media_id',
-                        foreignField: '_id',
-                        as: 'media'
+                    $addFields: {
+                        media_id: { $ifNull: ["$media_id", []] }
                     }
                 },
                 {
-                    $unwind: {
-                        path: '$media',
-                        preserveNullAndEmptyArrays: true
+                    $lookup: {
+                        from: 'media',
+                        let: { media_ids: "$media_id" },
+                        pipeline: [
+                            { $match: { $expr: { $in: ["$_id", "$$media_ids"] } } },
+                            {
+                                $project: {
+                                    file_type: 1,
+                                    file_name: 1,
+                                    file_data: 1
+                                }
+                            }
+                        ],
+                        as: 'media'
                     }
                 },
                 {
@@ -144,20 +138,48 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'replymessages',
+                        localField: '_id',
+                        foreignField: 'message_replied_on_id',
+                        as: 'replied_message_info'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message_info',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'messages',
+                        localField: 'replied_message_info.replied_message_id',
+                        foreignField: '_id',
+                        as: 'replied_message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $sort: { sent_at: -1 }
+                },
+                {
                     $project: {
-                        _id: 1,
+                        message_id: "$_id",
                         senders_id: 1,
                         sender_name: { $arrayElemAt: ['$sender.username', 0] },
                         recievers_id: 1,
-                        receiver_name:  { $arrayElemAt: ['$receiver.username', 0] },
+                        receiver_name: { $arrayElemAt: ['$receiver.username', 0] },
                         content: 1,
                         message_type: 1,
                         is_read: 1,
-                        media_id: 1,
-                        'media.file_type': 1,
-                        'media.file_name': 1,
-                        'media.file_data': 1,
-                        sent_at: {
+                        media: 1,
+                        time: {
                             $dateToString: {
                                 format: "%H:%M",
                                 date: "$sent_at",
@@ -165,60 +187,31 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
-                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] }
-                    }
-                },
-                {
-                    $sort: { sent_at: -1 }
-                },
-                {
-                    $group: {
-                        _id: "$date",
-                        messages: {
-                            $push: {
-                                _id: "$_id",
-                                senders_id: "$senders_id",
-                                sender_name: "$sender_name",
-                                recievers_id: "$recievers_id",
-                                receiver_name: "$receiver_name",
-                                content: "$content",
-                                message_type: "$message_type",
-                                is_read: "$is_read",
-                                media_id: "$media_id",
-                                media_details: {
-                                    file_type: "$media.file_type",
-                                    file_name: "$media.file_name",
-                                    file_buffer: "$media.file_data"
-                                },
-                                time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender"
+                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
+                        replied_message: {
+                            message_id: "$replied_message._id",
+                            senders_id: "$replied_message.senders_id",
+                            content: "$replied_message.content",
+                            time: {
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: "$replied_message.sent_at",
+                                    timezone: "+05:30"
+                                }
                             }
                         }
                     }
                 },
                 {
-                    $sort: { _id: -1 }
+                    $skip: skip
+                },
+                {
+                    $limit: limit
                 }
             ];
 
-            const dailyResult = await MessageModel.aggregate(pipeline);
+            return await MessageModel.aggregate(pipeline);
 
-            if (dailyResult.length > 0) {
-                result = result.concat(dailyResult);
-                days_with_data++;
-            }
-
-            given_date.setDate(given_date.getDate() - 1);
-            attempts++;
-        }
-
-        if (days_with_data === 0) {
-            console.log(`No data found in the last ${max_look_back_days} days.`);
-        } else if (days_with_data < required_days_of_data) {
-            console.log(`Only found data for ${days_with_data} days in the last ${max_look_back_days} days.`);
-        }
-
-        return result;
     } catch (error) {
         console.error('Error fetching chat history:', error);
         throw error;
@@ -551,6 +544,109 @@ export const addEntryForDeleteChatQuery = async(id, senders_id, receivers_id) =>
         return data1
     } catch (error) {
         console.error('Error in addEntryForDeleteChatQuery details:', error);
+        throw error;
+    }
+}
+
+export const addRepliedMessageDetailQuery = async(id, message_id) => {
+    try {
+        const data = {
+            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_id: new mongoose.Types.ObjectId(message_id)
+        }
+            return await ReplyMessageModel.create(data);
+    } catch (error) {
+        console.error('Error in addRepliedMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const repliedMessageDetailQuery = async(id) => {
+    try {
+        let object_id = new mongoose.Types.ObjectId(id);
+            const pipeline = [
+                {
+                    $match: { 
+                        replied_message_id: object_id
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'messages',
+                        localField: 'replied_message_id',
+                        foreignField: '_id',
+                        as: 'message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$message'
+                    }
+                },
+                {
+                    $project: {
+                        senders_id: "$message.senders_id",
+                        recievers_id: "$message.recievers_id",
+                        message_type: "$message.message_type",
+                        media_id: "$message.media_id", 
+                        content: "$message.content"
+                    }
+                }
+            ];
+    
+            return await ReplyMessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error in repliedMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const addRepliedGroupMessageDetailQuery = async(id, group_id) => {
+    try {
+        const data = {
+            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_group_id: new mongoose.Types.ObjectId(group_id)
+        }
+            return await ReplyMessageModel.create(data);
+    } catch (error) {
+        console.error('Error in addRepliedGroupMessageDetailQuery details:', error);
+        throw error;
+    }
+}
+
+export const repliedGroupMessageDetailQuery = async(id) => {
+    try {
+        let object_id = new mongoose.Types.ObjectId(id);
+            const pipeline = [
+                {
+                    $match: { 
+                        replied_message_id: object_id
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'groupmessages',
+                        localField: 'replied_message_id',
+                        foreignField: '_id',
+                        as: 'message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$message'
+                    }
+                },
+                {
+                    $project: {
+                        senders_id: "$message.senders_id",
+                        message_type: "$message.message_type",
+                        media_id: "$message.media_id", 
+                        content: "$message.content"
+                    }
+                }
+            ];
+    
+            return await ReplyMessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error in repliedMessageDetailQuery details:', error);
         throw error;
     }
 }

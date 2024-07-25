@@ -35,9 +35,10 @@ export const searchInChatVal = [
 ]
 
 export const fetchChatVal = [
-    body('date').isString().withMessage('Date must be a string').notEmpty().withMessage('Date cannot be empty.'),
     body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
-    body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.')
+    body('recievers_id').isString().withMessage('Receiver id must be string').notEmpty().withMessage('Receiver id cannot be empty.'),
+    body('skip').isNumeric().withMessage('Skip must be a number').notEmpty().withMessage('Skip cannot be empty.'),
+    body('limit').isNumeric().withMessage('Limit must be a number').notEmpty().withMessage('Linit cannot be empty.'),
 ]
 
 export const deleteChatVal = [
@@ -50,9 +51,10 @@ export const newMessageVal = [
 ]
 
 export const fetchGrpChatVal = [
-    body('date').isString().withMessage('Date must be a string').notEmpty().withMessage('Date cannot be empty.'),
     body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
-    body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.')
+    body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.'),
+    body('skip').isNumeric().withMessage('Skip must be a number').notEmpty().withMessage('Skip cannot be empty.'),
+    body('limit').isNumeric().withMessage('Limit must be a number').notEmpty().withMessage('Linit cannot be empty.'),
 ]
 
 export const updateGrpVal = [

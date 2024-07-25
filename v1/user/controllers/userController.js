@@ -116,25 +116,29 @@ export const uploadFiles = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        const file = req.file;
+        const files = req.files;
         let file_type = req.body.file_type
         let user_id = req.body.user_id;
-
+        let response = []
         user_id = new mongoose.Types.ObjectId(user_id)
-        const files_data = {
-            file_type : file_type,
-            file_name : file.originalname,
-            file_data : file.buffer,
-            uploaded_by: user_id
-        }
+
+        for (let image of files){
+            const files_data = {
+                file_type : file_type,
+                file_name : image.originalname,
+                file_data : image.buffer,
+                uploaded_by: user_id
+            }
         const data = await uploadMediaQuery(files_data)
-        const response = {
-            _id: data._id,
-            file_type: data.file_type,
-            file_name: data.file_name,
-            uploaded_by:data.uploaded_by,
-            uploaded_at:data.uploaded_at,
+        response.push(data)
         }
+
+            // _id: data._id,
+        //     file_type: data.file_type,
+        //     file_name: data.file_name,
+        //     uploaded_by:data.uploaded_by,
+        //     uploaded_at:data.uploaded_at,
+        // }
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
         console.error(error);
@@ -208,10 +212,10 @@ export const fetchChatHistory = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        let {user_id, recievers_id, date} = req.body;
+        let {user_id, recievers_id, skip, limit} = req.body;
         user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
-        const data = await fetchChatHistoryQuery(user_id, recievers_id, date);
+        const data = await fetchChatHistoryQuery(user_id, recievers_id, skip, limit);
         if (data.length == 0){
             return successResponse(res, data, `No chats found in the given date range`)
         }

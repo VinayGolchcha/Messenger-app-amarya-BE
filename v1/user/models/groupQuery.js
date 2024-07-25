@@ -48,25 +48,12 @@ export const getGroupDataQuery = async(group_name) => {
     }
 }
 
-export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
+export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limit) => {
     try {
-        let given_date = new Date(date);
-        const max_look_back_days = 30;
-        let result = [];
-        let required_days = 5;
-
-        while (required_days <= max_look_back_days) {
-            let currentStartDate = new Date(given_date);
-            currentStartDate.setDate(given_date.getDate() - required_days + 1);
-
             const pipeline = [
                 {
                     $match: {
                         group_id: group_id,
-                        sent_at: {
-                            $gte: currentStartDate,
-                            $lt: new Date(given_date.setDate(given_date.getDate() + 1))
-                        },
                         deleted_by_users: { $ne: sender_id }
                     }
                 },
@@ -82,31 +69,67 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                     $unwind: '$sender'
                 },
                 {
+                    $addFields: {
+                        media_id: { $ifNull: ["$media_id", []] }
+                    }
+                },
+                {
                     $lookup: {
                         from: 'media',
-                        localField: 'media_id',
-                        foreignField: '_id',
+                        let: { media_ids: "$media_id" },
+                        pipeline: [
+                            { $match: { $expr: { $in: ["$_id", "$$media_ids"] } } },
+                            {
+                                $project: {
+                                    file_type: 1,
+                                    file_name: 1,
+                                    file_data: 1
+                                }
+                            }
+                        ],
                         as: 'media'
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'replymessages',
+                        localField: '_id',
+                        foreignField: 'message_replied_on_group_id',
+                        as: 'replied_message_info'
+                    }
+                },
+                {
                     $unwind: {
-                        path: '$media',
+                        path: '$replied_message_info',
                         preserveNullAndEmptyArrays: true
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'groupmessages',
+                        localField: 'replied_message_info.replied_message_id',
+                        foreignField: '_id',
+                        as: 'replied_message'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$replied_message',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $sort: { sent_at: -1 }
+                },
+                {
                     $project: {
-                        _id: 1,
+                        message_id: "$_id",
                         group_id: 1,
                         senders_id: 1,
                         'sender.username': 1,
                         content: 1,
                         message_type: 1,
-                        media_id: 1,
-                        'media.file_type': 1,
-                        'media.file_name': 1,
-                        'media.file_data': 1,
+                        media: 1,
                         sent_at: {
                             $dateToString: {
                                 format: "%H:%M",
@@ -115,54 +138,30 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                             }
                         },
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
-                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] }
-                    }
-                },
-                {
-                    $sort: { sent_at: -1 }
-                },
-                {
-                    $group: {
-                        _id: "$date",
-                        messages: {
-                            $push: {
-                                _id: "$_id",
-                                group_id: "$group_id",
-                                senders_id: "$senders_id",
-                                sender_name: "$sender.username",
-                                content: "$content",
-                                message_type: "$message_type",
-                                media_id: "$media_id",
-                                media_details: {
-                                    file_type: "$media.file_type",
-                                    file_name: "$media.file_name",
-                                    file_buffer: "$media.file_data"
-                                },
-                                time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender"
+                        is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
+                        replied_message: {
+                            message_id: "$replied_message._id",
+                            senders_id: "$replied_message.senders_id",
+                            content: "$replied_message.content",
+                            time: {
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: "$replied_message.sent_at",
+                                    timezone: "+05:30"
+                                }
                             }
                         }
                     }
                 },
                 {
-                    $sort: { _id: -1 }
+                    $skip: skip
+                },
+                {
+                    $limit: limit
                 }
             ];
 
-            result = await GroupMessageModel.aggregate(pipeline);
-
-            if (result.length > 0) {
-                break; 
-            }
-
-            given_date.setDate(given_date.getDate() - required_days);
-            required_days++;
-           
-            if (required_days > max_look_back_days) {
-                console.log(`No data found for group ${group_id} within the last ${max_look_back_days} days.`);
-            }
-        }
-        return result;
+            return await GroupMessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error fetching group chat history:', error);
         throw error;
