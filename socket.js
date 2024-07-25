@@ -248,23 +248,26 @@ export const socketConnection = async(server)=>{
     });
 
     // Handle SDP Offer from Caller
-    socket.on('callInitiated', ({ offer, recipientId }) => {
-        io.to(recipientId).emit('callInitiated', { offer, callerId: socket.id });
+    socket.on('callInitiated', ({ offer, callee_id }) => {
+      console.log('Received offer:', callee_id);
+        io.to(callee_id).emit('callInitiated', { offer, caller_Id: socket.id });
     });
 
     // Handle SDP Answer from Callee
-    socket.on('callAnswered', ({ answer, callerId }) => {
-        io.to(callerId).emit('callAnswered', { answer });
+    socket.on('callAnswered', ({ answer, caller_Id }) => {
+      console.log('Received answer:', )
+        io.to(caller_Id).emit('callAnswered', { answer });
     });
 
     // Handle ICE Candidates
     socket.on('iceCandidate', (candidate) => {
+      console.log('Received candidate:', candidate);
         socket.broadcast.emit('iceCandidate', candidate);
     });
 
     // Handle audio detection
-    socket.on('audioDetected', ({ recipientId }) => {
-        io.to(recipientId).emit('audioDetected', { message: 'Audio is coming through' });
+    socket.on('audioDetected', ({ callee_id }) => {
+        io.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
     });
 
         socket.on('disconnect', () => {
