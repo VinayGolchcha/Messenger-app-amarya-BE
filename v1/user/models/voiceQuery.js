@@ -41,6 +41,23 @@ export const updateCallEndQuery = async (callId, end_time, duration) => {
     }
 };
 
+export const updateCallAnswerQuery = async (callId, start_time) => {
+    try {
+        const updatedCall = await VoiceModel.findByIdAndUpdate(
+            callId,
+            { start_time, status: 'answered' },
+            { new: true }
+        );
+        if (!updatedCall) {
+            throw new Error('Call not found');
+        }
+        return updatedCall;
+    } catch (error) {
+        console.error('Error updating call answer time:', error);
+        throw new Error('Error updating call answer time');
+    }
+};
+
 export const findCallById = async (callId) => {
     try {
         const call = await VoiceModel.findById(callId);
@@ -54,3 +71,11 @@ export const findCallById = async (callId) => {
     }
 };
 
+export const fetchCallLogsHistoryQuery = async (caller_id, callee_id) => {
+    try {
+        return await VoiceModel.find({caller_id: caller_id, callee_id: callee_id});
+    } catch (error) {
+        console.error('Error finding call by ID:', error);
+        throw new Error('Error finding call by ID');
+    }
+};

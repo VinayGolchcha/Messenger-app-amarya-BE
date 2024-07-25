@@ -9,7 +9,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
 import {addEntryForDeleteChatQuery, addMessageQuery, markAsReadQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
-import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById} from "./v1/user/models/voiceQuery.js";
+import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -147,128 +147,107 @@ export const socketConnection = async(server)=>{
           }
         })
 
-      //call handle 
-
-      socket.on("initiateCall", async ({ caller_id, callee_id }) => {
-        try {
-            let status = "initiated";
-            let start_time = new Date();
-            caller_id = new mongoose.Types.ObjectId(caller_id);
-            callee_id = new mongoose.Types.ObjectId(callee_id);
-    
-            const call_data = {
-                caller_id,
-                callee_id,
-                status,
-                start_time
-            };
-    
-            const call = await logCallQuery(call_data);
-            const callee_socket = await findUserDetailQuery(callee_id);
-    
-            if (callee_socket) {
-                socket.to(callee_socket.socket_id).emit("incomingCall", {
-                    call_id: call._id,
+/////////////////////////////////VOICE CALLING////////////////////////////////////////////////////
+          socket.on("initiateCall", async ({ caller_id, callee_id }) => {
+            try {
+                const istTime = moment.tz('Asia/Kolkata');
+                const utcTime = istTime.utc().toDate();
+                let status = "initiated";
+                let call_initiated_time = utcTime;
+                caller_id = new mongoose.Types.ObjectId(caller_id);
+                callee_id = new mongoose.Types.ObjectId(callee_id);
+        
+                const call_data = {
                     caller_id,
-                    start_time: call.start_time
-                });
+                    callee_id,
+                    status,
+                    call_initiated_time
+                };
+        
+                const call = await logCallQuery(call_data);
+                const callee_data = await userDataQuery(callee_id);
+                const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
+        
+                if (callee_socket) {
+                    socket.to(callee_data.socket_id).emit("message", buildMsgForCall(call._id, caller_id, `Incoming call!`));
+                }else{
+                  socket.emit("message", buildMsgForCall(call._id, caller_id, `The person you are trying to reach, is currently unavailable!`))
+                }
+            } catch (error) {
+                console.error("Error initiating call:", error);
+                socket.emit("callError", { message: "Error initiating call" });
             }
-    
-            // Notify the caller that the call has been initiated
-            socket.emit("callInitiated", {
-                call_id: call._id,
-                callee_id,
-                start_time: call.start_time
-            });
-    
-        } catch (error) {
-            console.error("Error initiating call:", error);
-            socket.emit("callError", { message: "Error initiating call" });
-        }
-    });
-    
-    // Handle call answering
-    socket.on("answerCall", async ({ call_id }) => {
-        try {
-            await updateCallStatusQuery(call_id, "answered");
-    
+        });
+        
+        // Handle call answering
+        socket.on("answerCall", async ({ call_id }) => {
+            try {
+                const istTime = moment.tz('Asia/Kolkata');
+                const utcTime = istTime.utc().toDate();
+                let start_time = utcTime;
+                await updateCallAnswerQuery(call_id, start_time);
+        
+                const call = await findCallById(call_id);
+                const caller_socket = await userDataQuery(call.caller_id);
+                // const callee_socket = await userDataQuery(call.callee_id);
+        
+                // if (caller_socket) {
+                    socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, call.caller_id, `Call is answered!`));
+                // }else{
+                //   socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
+                // }
+            } catch (error) {
+                socket.emit("callError", { message: "Error answering call" });
+            }
+        });
+
+        // Handle call rejection
+        socket.on("rejectCall", async ({ call_id }) => {
+            await updateCallStatusQuery(call_id, "rejected");
             const call = await findCallById(call_id);
-            const caller_socket = await findUserDetailQuery(call.caller_id);
-            const callee_socket = await findUserDetailQuery(call.callee_id);
-    
-            if (caller_socket) {
-                io.to(caller_socket.socket_id).emit("callAnswered", { call_id });
-            }
-    
-            if (callee_socket) {
-                socket.to(callee_socket.socket_id).emit("callAnswered", { call_id });
-            }
-    
-            socket.emit("callAnswered", { call_id });
-    
-        } catch (error) {
-            console.error("Error answering call:", error);
-            socket.emit("callError", { message: "Error answering call" });
-        }
-    });
+            const caller_socket = await userDataQuery(call.caller_id);
+            socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
+        });
 
-    // Handle call rejection
-    socket.on("rejectCall", async ({ call_id }) => {
-        await updateCallStatusQuery(call_id, "rejected");
-    
-        const call = await findCallById(call_id);
-        const caller_socket = await findUserDetailQuery(call.caller_id);
-        if (caller_socket) {
-            socket.to(caller_socket.socket_id).emit("callRejected", { call_id });
-        }
-    
-        socket.emit("callRejected", { call_id });
-    });
+        // Handle call ending
+        socket.on("endCall", async ({ call_id }) => {
+            const istTime = moment.tz('Asia/Kolkata');
+            const utcTime = istTime.utc().toDate();
+            let end_time = utcTime;
+            await updateCallEndQuery(call_id, end_time);
+        
+            const call = await findCallById(call_id);
+            const duration = (end_time - call.start_time) / 1000;
+        
+            await updateCallEndQuery(call_id, end_time, duration);
+        
+            const callee_socket = await userDataQuery(call.callee_id);
+            socket.emit("message", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
+            socket.to(callee_socket.socket_id).emit("message", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
+        });
 
-    // Handle call ending
-    socket.on("endCall", async ({ call_id }) => {
-        const end_time = new Date();
-        await updateCallEndQuery(call_id, end_time);
-    
-        const call = await findCallById(call_id);
-        const duration = (end_time - call.start_time) / 1000; // duration in seconds
-    
-        await updateCallEndQuery(call_id, end_time, duration);
-    
-        const caller_socket = await findUserDetailQuery(call.caller_id);
-        const callee_socket = await findUserDetailQuery(call.callee_id);
-        if (caller_socket) {
-            socket.to(caller_socket.socket_id).emit("callEnded", { call_id, duration });
-        }
-        if (callee_socket) {
-            socket.to(callee_socket.socket_id).emit("callEnded", { call_id, duration });
-        }
-    
-        socket.emit("callEnded", { call_id, duration });
-    });
+        // // Handle SDP Offer from Caller
+        // socket.on('callInitiated', ({ offer, callee_id }) => {
+        //   console.log('Received offer:', callee_id);
+        //     io.to(callee_id).emit('callInitiated', { offer, callee_Id: socket.id });
+        // });
 
-    // Handle SDP Offer from Caller
-    socket.on('callInitiated', ({ offer, callee_id }) => {
-      console.log('Received offer:', callee_id);
-        io.to(callee_id).emit('callInitiated', { offer, callee_Id: socket.id });
-    });
+        // // Handle SDP Answer from Callee
+        // socket.on('callAnswered', ({ answer, caller_Id }) => {
+        //   console.log('Received answer:', )
+        //     io.to(caller_Id).emit('callAnswered', { answer });
+        // });
 
-    // Handle SDP Answer from Callee
-    socket.on('callAnswered', ({ answer, caller_Id }) => {
-      console.log('Received answer:', )
-        io.to(caller_Id).emit('callAnswered', { answer });
-    });
+        // Handle ICE Candidates
+        socket.on('iceCandidate', (candidate) => {
+          console.log('Received candidate:', candidate);
+            socket.broadcast.emit('iceCandidate', candidate);
+        });
 
-    // Handle ICE Candidates
-    socket.on('iceCandidate', (candidate) => {
-      console.log('Received candidate:', candidate);
-        socket.broadcast.emit('iceCandidate', candidate);
-    });
-
-    // Handle audio detection
-    socket.on('audioDetected', ({ callee_id }) => {
-        io.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
-    });
+        // Handle audio detection
+        socket.on('audioDetected', ({ callee_id }) => {
+            io.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
+        });
 
         socket.on('disconnect', () => {
           console.log(`user disconnected, ${socket.id}`);
@@ -288,5 +267,28 @@ function buildMsg(id, name, text, message_id) {
           hour12: false,
           timeZone: 'Asia/Kolkata'
       }).format(new Date())
+  }
+}
+
+function buildMsgForCall(call_id, caller_id, text) {
+  return {
+      call_id,
+      caller_id,
+      text,
+      time: new Intl.DateTimeFormat('default', {
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+          timeZone: 'Asia/Kolkata'
+      }).format(new Date())
+  }
+}
+
+function buildMsgForCallEnd(call_id, caller_id, text, duration) {
+  return {
+      call_id,
+      caller_id,
+      text,
+      duration
   }
 }
