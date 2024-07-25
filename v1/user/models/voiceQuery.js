@@ -3,11 +3,10 @@ import { VoiceModel } from './voiceModel.js';
 
 export const logCallQuery = async (callData) => {
     try {
-        const call = new VoiceModel(callData);
-        return await call.save();
+        return await new VoiceModel(callData).save();
     } catch (error) {
         console.error('Error logging call:', error);
-        throw new Error('Error logging call');
+        throw error;
     }
 };
 
@@ -20,7 +19,7 @@ export const updateCallStatusQuery = async (callId, status) => {
         return updatedCall;
     } catch (error) {
         console.error('Error updating call status:', error);
-        throw new Error('Error updating call status');
+        throw error;
     }
 };
 
@@ -37,7 +36,7 @@ export const updateCallEndQuery = async (callId, end_time, duration) => {
         return updatedCall;
     } catch (error) {
         console.error('Error updating call end time:', error);
-        throw new Error('Error updating call end time');
+        throw error;
     }
 };
 
@@ -54,7 +53,7 @@ export const updateCallAnswerQuery = async (callId, start_time) => {
         return updatedCall;
     } catch (error) {
         console.error('Error updating call answer time:', error);
-        throw new Error('Error updating call answer time');
+        throw error;
     }
 };
 
@@ -67,15 +66,15 @@ export const findCallById = async (callId) => {
         return call;
     } catch (error) {
         console.error('Error finding call by ID:', error);
-        throw new Error('Error finding call by ID');
+        throw error;
     }
 };
 
 export const fetchCallLogsHistoryQuery = async (caller_id, callee_id) => {
     try {
-        return await VoiceModel.find({caller_id: caller_id, callee_id: callee_id});
+        return await VoiceModel.find({ caller_id, callee_id });
     } catch (error) {
-        console.error('Error finding call by ID:', error);
-        throw new Error('Error finding call by ID');
+        console.error('Error fetching call logs history:', error);
+        throw error;
     }
 };

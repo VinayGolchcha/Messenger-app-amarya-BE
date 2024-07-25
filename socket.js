@@ -298,10 +298,10 @@ export const socketConnection = async(server)=>{
         // });
 
         // Handle ICE Candidates
-        socket.on('iceCandidate', (candidate) => {
+       /* socket.on('iceCandidate', (candidate) => {
           console.log('Received candidate:', candidate);
             socket.broadcast.emit('iceCandidate', candidate);
-        });
+        });*/
 
         // Handle audio detection
         socket.on('audioDetected', ({ callee_id }) => {
