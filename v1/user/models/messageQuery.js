@@ -69,29 +69,14 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
     }
 };
 
-export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
+export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit) => {
     try {
-        let given_date = new Date(date);
-        const max_look_back_days = 30;
-        const required_days_of_data = 5;
-        let result = [];
-        let attempts = 0;
-        let days_with_data = 0;
-
-        while (attempts < max_look_back_days && days_with_data < required_days_of_data) {
-            let currentStartDate = new Date(given_date);
-            currentStartDate.setHours(0, 0, 0, 0);
-            let nextDay = new Date(given_date);
-            nextDay.setDate(nextDay.getDate() + 1);
-            nextDay.setHours(0, 0, 0, 0);
-
             const pipeline = [
                 {
                     $match: {
                         $or: [{senders_id: sender_id, recievers_id: reciever_id }, {senders_id: reciever_id, recievers_id: sender_id}],
                         'delete_chat.userId': sender_id,
-                        'delete_chat.delete_status': false,
-                        sent_at: { $gte: currentStartDate, $lt: nextDay }
+                        'delete_chat.delete_status': false
                     }
                 },
                 {
@@ -181,6 +166,9 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
+                    $sort: { sent_at: -1 }
+                },
+                {
                     $project: {
                         message_id: "$_id",
                         senders_id: 1,
@@ -191,7 +179,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                         message_type: 1,
                         is_read: 1,
                         media: 1,
-                        sent_at: {
+                        time: {
                             $dateToString: {
                                 format: "%H:%M",
                                 date: "$sent_at",
@@ -215,52 +203,15 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, date) => {
                     }
                 },
                 {
-                    $sort: { sent_at: -1 }
+                    $skip: skip
                 },
                 {
-                    $group: {
-                        _id: "$date",
-                        messages: {
-                            $push: {
-                                message_id: "$message_id",
-                                senders_id: "$senders_id",
-                                sender_name: "$sender_name",
-                                recievers_id: "$recievers_id",
-                                receiver_name: "$receiver_name",
-                                content: "$content",
-                                message_type: "$message_type",
-                                is_read: "$is_read",
-                                media: "$media",
-                                time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender",
-                                replied_message: "$replied_message"
-                            }
-                        }
-                    }
-                },
-                {
-                    $sort: { _id: -1 }
+                    $limit: limit
                 }
             ];
 
-            const dailyResult = await MessageModel.aggregate(pipeline);
+            return await MessageModel.aggregate(pipeline);
 
-            if (dailyResult.length > 0) {
-                result = result.concat(dailyResult);
-                days_with_data++;
-            }
-
-            given_date.setDate(given_date.getDate() - 1);
-            attempts++;
-        }
-
-        if (days_with_data === 0) {
-            console.log(`No data found in the last ${max_look_back_days} days.`);
-        } else if (days_with_data < required_days_of_data) {
-            console.log(`Only found data for ${days_with_data} days in the last ${max_look_back_days} days.`);
-        }
-
-        return result;
     } catch (error) {
         console.error('Error fetching chat history:', error);
         throw error;

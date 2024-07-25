@@ -117,7 +117,6 @@ export const uploadFiles = async (req, res) => {
         }
 
         const files = req.files;
-        console.log(files)
         let file_type = req.body.file_type
         let user_id = req.body.user_id;
         let response = []
@@ -213,10 +212,10 @@ export const fetchChatHistory = async (req, res) => {
             return errorResponse(res, errors.array(), "")
         }
 
-        let {user_id, recievers_id, date} = req.body;
+        let {user_id, recievers_id, skip, limit} = req.body;
         user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
-        const data = await fetchChatHistoryQuery(user_id, recievers_id, date);
+        const data = await fetchChatHistoryQuery(user_id, recievers_id, skip, limit);
         if (data.length == 0){
             return successResponse(res, data, `No chats found in the given date range`)
         }

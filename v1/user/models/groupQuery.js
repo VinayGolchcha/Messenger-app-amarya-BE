@@ -48,25 +48,12 @@ export const getGroupDataQuery = async(group_name) => {
     }
 }
 
-export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
+export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limit) => {
     try {
-        let given_date = new Date(date);
-        const max_look_back_days = 30;
-        let result = [];
-        let required_days = 5;
-
-        while (required_days <= max_look_back_days) {
-            let currentStartDate = new Date(given_date);
-            currentStartDate.setDate(given_date.getDate() - required_days + 1);
-
             const pipeline = [
                 {
                     $match: {
                         group_id: group_id,
-                        sent_at: {
-                            $gte: currentStartDate,
-                            $lt: new Date(given_date.setDate(given_date.getDate() + 1))
-                        },
                         deleted_by_users: { $ne: sender_id }
                     }
                 },
@@ -132,6 +119,9 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                     }
                 },
                 {
+                    $sort: { sent_at: -1 }
+                },
+                {
                     $project: {
                         message_id: "$_id",
                         group_id: 1,
@@ -164,46 +154,14 @@ export const fetchGroupChatHistoryQuery = async (group_id, date, sender_id) => {
                     }
                 },
                 {
-                    $sort: { sent_at: -1 }
+                    $skip: skip
                 },
                 {
-                    $group: {
-                        _id: "$date",
-                        messages: {
-                            $push: {
-                                message_id: "$message_id",
-                                group_id: "$group_id",
-                                senders_id: "$senders_id",
-                                sender_name: "$sender.username",
-                                content: "$content",
-                                message_type: "$message_type",
-                                media: "$media",
-                                time: "$sent_at",
-                                is_sent_by_sender: "$is_sent_by_sender",
-                                replied_message: "$replied_message"
-                            }
-                        }
-                    }
-                },
-                {
-                    $sort: { _id: -1 }
+                    $limit: limit
                 }
             ];
 
-            result = await GroupMessageModel.aggregate(pipeline);
-
-            if (result.length > 0) {
-                break; 
-            }
-
-            given_date.setDate(given_date.getDate() - required_days);
-            required_days++;
-           
-            if (required_days > max_look_back_days) {
-                console.log(`No data found for group ${group_id} within the last ${max_look_back_days} days.`);
-            }
-        }
-        return result;
+            return await GroupMessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error fetching group chat history:', error);
         throw error;
