@@ -6,7 +6,7 @@ import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
 import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail} from '../controllers/groupController.js';
-import {loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal } from '../../../utils/validation.js';
+import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal } from '../../../utils/validation.js';
 import { fetchCallLogs} from '../controllers/voiceController.js';
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -40,7 +40,7 @@ app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fet
 app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
 
 //voice call api
-app.post("/fetch-call-logs", fetchCallLogs)
+app.post("/fetch-call-logs",authenticateToken, fetchCallLogsVal,fetchCallLogs)
 
 
 app.use("/", router);

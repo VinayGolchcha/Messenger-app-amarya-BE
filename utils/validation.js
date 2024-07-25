@@ -69,3 +69,7 @@ export const fetchUserProfileVal=[
 export const fetchGroupDetailVal=[
     param('group_id').isString().withMessage('group id must be a string').notEmpty().withMessage('group id cannot be empty.')
 ]
+export const fetchCallLogsVal=[
+    body('caller_id').isString().withMessage('caller id must be a string').notEmpty().withMessage('caller id cannot be empty.'),
+    body('callee_id').isString().withMessage('callee id must be a string').notEmpty().withMessage('callee id cannot be empty.')
+]
