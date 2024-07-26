@@ -7,7 +7,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
   addGroupMuteDataQuery,
   userDataQuery} from "./v1/user/models/userQuery.js"
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
-import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
+import { addGroupMessageQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 
 export const socketConnection = async(server)=>{
@@ -112,6 +112,16 @@ export const socketConnection = async(server)=>{
           const user = await findUserDetailQuery(socket.id)
           await Promise.all([markAsReadQuery(message_id),
             updateReadByStatusQuery(message_id, user._id)])
+        });
+
+        socket.on("markAsReadStatus", async ({ message_id }) => {
+          const [data, group_data] = await Promise.all([markAsReadQuery(message_id), getIsReadStatusQuery(message_id)])
+
+          if(data != null){
+            socket.emit("message", buildMsgExs(message_id, data.content, data.is_read));
+          }else if (group_data != null){
+          socket.emit("message", buildMsgExs(message_id, group_data.content, group_data.is_read));
+         }
         });
 
         socket.on("muteUnmuteNotifications", async ({ recievers_id, mute_status, group_id }) => {
@@ -226,5 +236,13 @@ function buildMsg(id, name, text, message_id, reply_content) {
           hour12: false,
           timeZone: 'Asia/Kolkata'
       }).format(new Date())
+  }
+}
+
+function buildMsgExs(message_id, content, is_read) {
+  return {
+      message_id,
+      content,
+      is_read
   }
 }

@@ -517,3 +517,13 @@ export const updateDeleteUserStatusForGroupQuery = async(id, user_id) => {
         throw error;
     }
 }
+
+export const getIsReadStatusQuery = async(message_id) => {
+    try {
+        const id = new mongoose.Types.ObjectId(message_id);
+        return await GroupMessageModel.findOne({ _id: id });
+    } catch (error) {
+        console.error('Error in getIsReadStatusQuery details:', error);
+        throw error;
+    }
+}

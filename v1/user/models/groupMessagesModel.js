@@ -9,6 +9,7 @@ const GroupMessageSchema = new mongoose.Schema({
     media_id : { type: mongoose.Schema.Types.ObjectId, ref: 'Media'},
     content: { type: String, default: null},
     sent_at: { type: Date, default: new Date},
+    is_read: { type: Boolean, default: false},
     sender_deleted: { type: Boolean, default: false},
     read_by: {type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default : []},
     deleted_by_users: {type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default : []}
