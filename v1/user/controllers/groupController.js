@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
-import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery} from "../models/groupQuery.js"
+import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery, exitGroupQuery, exitReadByArrayQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
 
 dotenv.config();
@@ -165,5 +165,29 @@ export const fetchGroupDetail = async (req, res) => {
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
+    }
+}
+
+export const exitGroup = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return errorResponse(res, errors.array(), "")
+        }
+
+        let { group_id, user_id } = req.body
+
+        user_id = new mongoose.Types.ObjectId(user_id);
+        group_id = new mongoose.Types.ObjectId(group_id);
+        
+        const is_group = await exitGroupQuery(group_id, user_id)
+        if (is_group.modifiedCount == 0) {
+            return notFoundResponse(res, '', `User not found in Group`)
+        }
+        await exitReadByArrayQuery(group_id, user_id)
+        return successResponse(res, is_group, `User exited group successfully`);
+    } catch (error) {
+        console.error(error);
+        return internalServerErrorResponse(res, error);
     }
 }

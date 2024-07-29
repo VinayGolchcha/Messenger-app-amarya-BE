@@ -16,8 +16,8 @@ export const updateGroupQuery = async (id, data) => {
     }
 }
 
-export const groupDetailQuery = async (user_id) => {
-    return await GroupModel.findOne({ 'members': user_id })
+export const groupDetailQuery = async (id, user_id) => {
+    return await GroupModel.findOne({ _id: id, 'members': user_id })
     .lean();
 }
 
@@ -527,6 +527,24 @@ export const getIsReadStatusQuery = async(message_id) => {
         return await GroupMessageModel.findOne({ _id: id });
     } catch (error) {
         console.error('Error in getIsReadStatusQuery details:', error);
+        throw error;
+    }
+}
+
+export const exitGroupQuery = async (id, user_id) => {
+    try {
+        return await GroupModel.updateOne({_id: id}, {$pull: {members: user_id}});
+    } catch (error) {
+        console.error('Error finding exitGroupQuery details:', error);
+        throw error;
+    }
+}
+
+export const exitReadByArrayQuery = async (id, user_id) => {
+    try {
+        return await GroupMessageModel.updateMany({group_id: id}, {$pull: {read_by: user_id}});
+    } catch (error) {
+        console.error('Error finding exitReadByArrayQuery details:', error);
         throw error;
     }
 }
