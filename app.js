@@ -9,7 +9,7 @@ import fs from 'fs';
 import routes from './v1/user/routes/routes.js';
 import { runCronJobs } from './cron jobs/scheduler.js';
 import { socketConnection } from './socket.js';
-
+import { monitorMessages } from './v1/helpers/messageMonitor.js'
 
 const app = express();
 config();
@@ -76,6 +76,7 @@ try {
 } catch (error) {
   console.error("Socket connection failed:", error);
 }
+monitorMessages()
 
 const port = process.env.PORT || 6060;
 server.listen(port, () => {
