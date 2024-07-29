@@ -137,6 +137,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                                 timezone: "+05:30"
                             }
                         },
+                        is_read: 1,
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
                         is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
                         replied_message: {
@@ -295,6 +296,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                     group_name: { $first: "$group.group_name" },
                     members: { $first: "$group.members" },
                     created_by: { $first: "$group.created_by" },
+                    is_read: { $first: "$group.is_read" },
                     messages: {
                         $push: {
                             senders_id: "$senders_id",
@@ -331,6 +333,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                     group_name: 1,
                     members: 1,
                     created_by: 1, 
+                    is_read: 1,
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
                     _id: 0
