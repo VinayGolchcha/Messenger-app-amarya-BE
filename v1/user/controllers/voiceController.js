@@ -13,11 +13,10 @@ export const fetchCallLogs = async (req, res) => {
             return errorResponse(res, errors.array(), '');
         }
 
-        let { caller_id, callee_id } = req.body;
-        caller_id = new mongoose.Types.ObjectId(caller_id);
-        callee_id = new mongoose.Types.ObjectId(callee_id);
+        let { user_id } = req.body;
+        user_id = new mongoose.Types.ObjectId(user_id);
 
-        const data = await fetchCallLogsHistoryQuery(caller_id, callee_id);
+        const data = await fetchCallLogsHistoryQuery(user_id);
         return successResponse(res, data, 'Call Logs fetched successfully');
     } catch (error) {
         console.error(error);

@@ -70,9 +70,9 @@ export const findCallById = async (callId) => {
     }
 };
 
-export const fetchCallLogsHistoryQuery = async (caller_id, callee_id) => {
+export const fetchCallLogsHistoryQuery = async (caller_id) => {
     try {
-        return await VoiceModel.find({ caller_id, callee_id });
+        return await VoiceModel.find({$or: [{caller_id: caller_id}, {callee_id : caller_id}] });
     } catch (error) {
         console.error('Error fetching call logs history:', error);
         throw error;

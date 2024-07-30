@@ -40,7 +40,7 @@ app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fet
 app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
 
 //voice call api
-app.post("/fetch-call-logs",authenticateToken, fetchCallLogsVal,fetchCallLogs)
+app.post("/fetch-call-logs",authenticateToken, fetchCallLogsVal, fetchCallLogs)
 
 
 app.use("/", router);
