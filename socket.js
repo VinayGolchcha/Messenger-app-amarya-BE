@@ -228,9 +228,9 @@ export const socketConnection = async(server)=>{
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
-                    socket.to(callee_data.socket_id).emit("message", buildMsgForCall(call._id, caller_id, `Incoming call!`));
+                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, `Incoming call!`));
                 }else{
-                  socket.emit("message", buildMsgForCall(call._id, caller_id, `The person you are trying to reach, is currently unavailable!`))
+                  socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, `The person you are trying to reach, is currently unavailable!`))
                 }
             } catch (error) {
                 console.error("Error initiating call:", error);
@@ -251,7 +251,7 @@ export const socketConnection = async(server)=>{
                 // const callee_socket = await userDataQuery(call.callee_id);
         
                 // if (caller_socket) {
-                    socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, call.caller_id, `Call is answered!`));
+                    socket.to(caller_socket.socket_id).emit("callAnswered", buildMsgForCall(call_id, call.caller_id, `Call is answered!`));
                 // }else{
                 //   socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
                 // }
@@ -265,7 +265,7 @@ export const socketConnection = async(server)=>{
             await updateCallStatusQuery(call_id, "rejected");
             const call = await findCallById(call_id);
             const caller_socket = await userDataQuery(call.caller_id);
-            socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
+            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
         });
 
         // Handle call ending
@@ -281,31 +281,31 @@ export const socketConnection = async(server)=>{
             await updateCallEndQuery(call_id, end_time, duration);
         
             const callee_socket = await userDataQuery(call.callee_id);
-            socket.emit("message", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
-            socket.to(callee_socket.socket_id).emit("message", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
+            socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
+            socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
         });
 
-        // // Handle SDP Offer from Caller
-        // socket.on('callInitiated', ({ offer, callee_id }) => {
-        //   console.log('Received offer:', callee_id);
-        //     io.to(callee_id).emit('callInitiated', { offer, callee_Id: socket.id });
+        // Handle SDP Offer from Caller
+        // socket.on('callInitiated', ({call_id, caller_id }) => {
+        //   console.log('Received offer:', call_id);
+        //     io.to(callee_id).emit('callInitiated',  buildMsgForCall(call_id, caller_id, `Incoming call!`));
         // });
 
-        // // Handle SDP Answer from Callee
+        // Handle SDP Answer from Callee
         // socket.on('callAnswered', ({ answer, caller_Id }) => {
         //   console.log('Received answer:', )
         //     io.to(caller_Id).emit('callAnswered', { answer });
         // });
 
         // Handle ICE Candidates
-       /* socket.on('iceCandidate', (candidate) => {
+        socket.on('iceCandidate', (candidate) => {
           console.log('Received candidate:', candidate);
             socket.broadcast.emit('iceCandidate', candidate);
-        });*/
+        });
 
         // Handle audio detection
         socket.on('audioDetected', ({ callee_id }) => {
-            io.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
+          socket.broadcast.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
         });
 
         socket.on('disconnect', () => {
