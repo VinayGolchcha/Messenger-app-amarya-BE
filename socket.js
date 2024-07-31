@@ -7,7 +7,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
   addGroupMuteDataQuery,
   userDataQuery} from "./v1/user/models/userQuery.js"
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
-import { addGroupMessageQuery, getGroupDataQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
+import { addGroupMessageQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
@@ -114,6 +114,16 @@ export const socketConnection = async(server)=>{
             updateReadByStatusQuery(message_id, user._id)])
         });
 
+        socket.on("markAsReadStatus", async ({ message_id }) => {
+          const [data, group_data] = await Promise.all([markAsReadQuery(message_id), getIsReadStatusQuery(message_id)])
+
+          if(data != null){
+            socket.emit("message", buildMsgExs(message_id, data.content, data.is_read));
+          }else if (group_data != null){
+          socket.emit("message", buildMsgExs(message_id, group_data.content, group_data.is_read));
+         }
+        });
+
         socket.on("muteUnmuteNotifications", async ({ recievers_id, mute_status, group_id }) => {
           const user = await findUserDetailQuery(socket.id)
           recievers_id && recievers_id.trim() !== '' ? 
@@ -137,7 +147,7 @@ export const socketConnection = async(server)=>{
           const message_cr = await addGroupMessageQuery(message_data)
           await updateReadByStatusQuery(message_cr._id, user._id)
 
-          io.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
+          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
 
           const id = new new mongoose.Types.ObjectId(group_id._id)
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
@@ -168,9 +178,9 @@ export const socketConnection = async(server)=>{
           const id = new mongoose.Types.ObjectId(group_id._id)
           const reply_message = await addRepliedGroupMessageDetailQuery(replied_message_id, message_cr._id)
           const reply_message_data = await repliedGroupMessageDetailQuery(reply_message.replied_message_id)
-          io.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content))
 
-         
+          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content))
+
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
               const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
               if (exists === false) {
@@ -186,8 +196,8 @@ export const socketConnection = async(server)=>{
           // join room
           if (user.length > 0) {
             socket.join(user[0].group_name)
-            socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
-            socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
+            // socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
+            // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
             await markAllUnreadMessagesAsReadQuery(user_id, group_name)
           } else {
             socket.emit('message', buildMsg(`You have not been able to join due to some error`))
@@ -199,8 +209,8 @@ export const socketConnection = async(server)=>{
           // leave room
           if (user.length > 0) {
             socket.leave(user[0].group_name)
-            socket.emit('message', buildMsg(user[0]._id, user[0].username, `You have left the ${user[0].group_name} chat room`))
-            socket.broadcast.to(user[0].group_name).emit('message', buildMsg('',user[0].username, `${user[0].username} has left the room`))
+            // socket.emit('message', buildMsg(user[0]._id, user[0].username, `You have left the ${user[0].group_name} chat room`))
+            // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('',user[0].username, `${user[0].username} has left the room`))
           } else {
             socket.emit('message', buildMsg(`You have not been able to leave due to some error`))
           }
@@ -327,6 +337,14 @@ function buildMsg(id, name, text, message_id, reply_content) {
           hour12: false,
           timeZone: 'Asia/Kolkata'
       }).format(new Date())
+  }
+}
+
+function buildMsgExs(message_id, content, is_read) {
+  return {
+      message_id,
+      content,
+      is_read
   }
 }
 

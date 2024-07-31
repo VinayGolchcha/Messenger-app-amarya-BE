@@ -5,8 +5,8 @@ const router = Router();
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
-import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail} from '../controllers/groupController.js';
-import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal } from '../../../utils/validation.js';
+import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail, exitGroup} from '../controllers/groupController.js';
+import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal, exitGrpVal } from '../../../utils/validation.js';
 import { fetchCallLogs} from '../controllers/voiceController.js';
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -22,6 +22,7 @@ app.post('/create-group', authenticateToken, createGroupVal, createGroup);
 app.post('/fetch-group-chat-history', authenticateToken, fetchGrpChatVal, fetchGroupChatHistory);
 app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessageVal, fetchGroupDataForUser);
 app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
+app.post('/exit-group', authenticateToken, exitGrpVal, exitGroup);
 app.post('/search-message-in-group', searchMessageInGroup);
 
 //user APIS
@@ -34,10 +35,6 @@ app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMess
 app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistory);
 app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
-
-
-app.get('/fetch-user-profile/:user_id',authenticateToken,fetchUserProfileVal,fetchUserProfile);
-app.get('/fetch-group-data/:group_id',authenticateToken,fetchGroupDetailVal,fetchGroupDetail);
 
 //voice call api
 app.post("/fetch-call-logs",authenticateToken, fetchCallLogsVal, fetchCallLogs)

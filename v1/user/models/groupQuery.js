@@ -16,8 +16,8 @@ export const updateGroupQuery = async (id, data) => {
     }
 }
 
-export const groupDetailQuery = async (user_id) => {
-    return await GroupModel.findOne({ 'members': user_id })
+export const groupDetailQuery = async (id, user_id) => {
+    return await GroupModel.findOne({ _id: id, 'members': user_id })
     .lean();
 }
 
@@ -137,6 +137,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                                 timezone: "+05:30"
                             }
                         },
+                        is_read: 1,
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
                         is_sent_by_sender: { $eq: ['$senders_id', sender_id] },
                         replied_message: {
@@ -295,6 +296,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                     group_name: { $first: "$group.group_name" },
                     members: { $first: "$group.members" },
                     created_by: { $first: "$group.created_by" },
+                    is_read: { $first: "$group.is_read" },
                     messages: {
                         $push: {
                             senders_id: "$senders_id",
@@ -331,6 +333,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                     group_name: 1,
                     members: 1,
                     created_by: 1, 
+                    is_read: 1,
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
                     _id: 0
@@ -514,6 +517,34 @@ export const updateDeleteUserStatusForGroupQuery = async(id, user_id) => {
         return await GroupMessageModel.updateOne({_id: id}, { $addToSet: { deleted_by_users: user_id } });
     } catch (error) {
         console.error('Error finding updateDeleteUserStatusForGroupQuery details:', error);
+        throw error;
+    }
+}
+
+export const getIsReadStatusQuery = async(message_id) => {
+    try {
+        const id = new mongoose.Types.ObjectId(message_id);
+        return await GroupMessageModel.findOne({ _id: id });
+    } catch (error) {
+        console.error('Error in getIsReadStatusQuery details:', error);
+        throw error;
+    }
+}
+
+export const exitGroupQuery = async (id, user_id) => {
+    try {
+        return await GroupModel.updateOne({_id: id}, {$pull: {members: user_id}});
+    } catch (error) {
+        console.error('Error finding exitGroupQuery details:', error);
+        throw error;
+    }
+}
+
+export const exitReadByArrayQuery = async (id, user_id) => {
+    try {
+        return await GroupMessageModel.updateMany({group_id: id}, {$pull: {read_by: user_id}});
+    } catch (error) {
+        console.error('Error finding exitReadByArrayQuery details:', error);
         throw error;
     }
 }

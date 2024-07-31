@@ -63,9 +63,16 @@ export const updateGrpVal = [
     body('members').isArray().withMessage('Members must be a array').notEmpty().withMessage('Members cannot be empty.'),
     body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.')
 ]
+
+export const exitGrpVal = [
+    body('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.'),
+    body('group_id').isString().withMessage('Group id must be string').notEmpty().withMessage('Group id cannot be empty.')
+]
+
 export const fetchUserProfileVal=[
     param('user_id').isString().withMessage('User id must be a string').notEmpty().withMessage('User id cannot be empty.')
 ]
+
 export const fetchGroupDetailVal=[
     param('group_id').isString().withMessage('group id must be a string').notEmpty().withMessage('group id cannot be empty.')
 ]
