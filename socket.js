@@ -318,6 +318,18 @@ export const socketConnection = async(server)=>{
           socket.broadcast.to(callee_id).emit('audioDetected', { message: 'Audio is coming through' });
         });
 
+        socket.on("peer:nego:needed", async ({ caller_id, callee_id, offer }) => {
+          console.log("peer:nego:needed", offer);
+          const callee_socket = await userDataQuery(callee_id);
+          socket.broadcast.to(callee_socket.socket_id).emit("peer:nego:needed", { caller_id, callee_id, offer });
+        });
+      
+        socket.on("peer:nego:done", async ({ caller_id, callee_id, ans }) => {
+          console.log("peer:nego:done", ans);
+          const callee_socket = await userDataQuery(caller_id);
+          socket.broadcast.to(callee_socket.socket_id).emit("peer:nego:final", { caller_id, callee_id, ans });
+        });
+
         socket.on('disconnect', () => {
           console.log(`user disconnected, ${socket.id}`);
         });
