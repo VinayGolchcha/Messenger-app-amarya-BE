@@ -217,7 +217,7 @@ export const socketConnection = async(server)=>{
         })
 
 /////////////////////////////////VOICE CALLING////////////////////////////////////////////////////
-          socket.on("initiateCall", async ({ caller_id, callee_id }) => {
+          socket.on("initiateCall", async ({ caller_id, callee_id, offer }) => {
             try {
                 const istTime = moment.tz('Asia/Kolkata');
                 const utcTime = istTime.utc().toDate();
@@ -238,18 +238,18 @@ export const socketConnection = async(server)=>{
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
-                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, `Incoming call!`));
+                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, callee_id,  `Incoming call!`, offer));
                 }else{
-                  socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, `The person you are trying to reach, is currently unavailable!`))
+                  socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, callee_id, `The person you are trying to reach, is currently unavailable!`, offer))
                 }
             } catch (error) {
                 console.error("Error initiating call:", error);
-                socket.emit("callError", { message: "Error initiating call" });
+        socket.emit("callError", { message: "Error initiating call" });
             }
         });
         
         // Handle call answering
-        socket.on("answerCall", async ({ call_id }) => {
+        socket.on("answerCall", async ({ call_id, caller_id, ans }) => {
             try {
                 const istTime = moment.tz('Asia/Kolkata');
                 const utcTime = istTime.utc().toDate();
@@ -261,7 +261,7 @@ export const socketConnection = async(server)=>{
                 // const callee_socket = await userDataQuery(call.callee_id);
         
                 // if (caller_socket) {
-                    socket.to(caller_socket.socket_id).emit("callAnswered", buildMsgForCall(call_id, call.caller_id, `Call is answered!`));
+                    socket.to(caller_socket.socket_id).emit("callAnswered", buildMsgForAnsCall(call_id, call.caller_id, call.callee_id, `Call is answered!`, ans));
                 // }else{
                 //   socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
                 // }
@@ -348,17 +348,35 @@ function buildMsgExs(message_id, content, is_read) {
   }
 }
 
-function buildMsgForCall(call_id, caller_id, text) {
+function buildMsgForCall(call_id, caller_id, callee_id, text, offer) {
   return {
       call_id,
       caller_id,
+      callee_id,
       text,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
           minute: 'numeric',
           hour12: false,
           timeZone: 'Asia/Kolkata'
-      }).format(new Date())
+      }).format(new Date()),
+      offer
+  }
+}
+
+function buildMsgForAnsCall(call_id, caller_id, callee_id, text, ans) {
+  return {
+      call_id,
+      caller_id,
+      callee_id,
+      text,
+      time: new Intl.DateTimeFormat('default', {
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+          timeZone: 'Asia/Kolkata'
+      }).format(new Date()),
+      ans
   }
 }
 
