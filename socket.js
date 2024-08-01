@@ -7,7 +7,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
   addGroupMuteDataQuery,
   userDataQuery} from "./v1/user/models/userQuery.js"
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
-import { addGroupMessageQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
+import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
@@ -41,10 +41,10 @@ export const socketConnection = async(server)=>{
           console.log(event, args);
         });
 
-        socket.on("privateMessage", async({ message, reciever_id, message_type, media_id }) => {
+        socket.on("privateMessage", async({ message, sender_id, reciever_id, message_type, media_id }) => {
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
-          const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), userDataQuery(reciever_id)]);
+          const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
           const recipient_socket = io.sockets.sockets.get(reciever_data.socket_id);
           const message_data = {
             senders_id: sender_data._id,
@@ -62,7 +62,7 @@ export const socketConnection = async(server)=>{
 
           await addEntryForDeleteChatQuery(data._id, sender_data._id, reciever_data._id)
  
-          const id = new new mongoose.Types.ObjectId(reciever_data._id)
+          const id = new mongoose.Types.ObjectId(reciever_data._id)
           if (sender_data.mute_notifications != null && sender_data.mute_notifications.direct_messages != null){
               const exists = sender_data.mute_notifications.direct_messages.some(obj => obj.userId.equals(id) )
               if(exists === false){
@@ -73,10 +73,10 @@ export const socketConnection = async(server)=>{
           }
         });
 
-        socket.on("replyMessage", async({ message, reciever_id, message_type, media_id, replied_message_id }) => {
+        socket.on("replyMessage", async({ message, sender_id, reciever_id, message_type, media_id, replied_message_id }) => {
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
-          const [sender_data, reciever_data] = await Promise.all([findUserDetailQuery(socket.id), userDataQuery(reciever_id)]);
+          const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
           const recipient_socket = io.sockets.sockets.get(reciever_data.socket_id);
           const message_data = {
             senders_id: sender_data._id,
@@ -132,10 +132,10 @@ export const socketConnection = async(server)=>{
             await updateNotificationStatusForGroupQuery(user._id, group_id, mute_status) : ''
         });
 
-        socket.on('groupMessage', async({group_name, message, message_type, media_id}) => {
+        socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id}) => {
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
-          const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
+          const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
           const message_data = {
             group_id: group_id._id,
             senders_id: user._id,
@@ -149,7 +149,7 @@ export const socketConnection = async(server)=>{
 
           socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
 
-          const id = new new mongoose.Types.ObjectId(group_id._id)
+          const id = new mongoose.Types.ObjectId(group_id._id)
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
               const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
               if (exists === false) {
@@ -160,10 +160,10 @@ export const socketConnection = async(server)=>{
           }
         });
 
-        socket.on('groupReplyMessage', async({group_name, message, message_type, media_id, replied_message_id}) => {
+        socket.on('groupReplyMessage', async({group_name, sender_id, message, message_type, media_id, replied_message_id}) => {
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
-          const [user, group_id] = await Promise.all([findUserDetailQuery(socket.id), getGroupDataQuery(group_name)])
+          const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
           const message_data = {
             group_id: group_id._id,
             senders_id: user._id,
@@ -192,10 +192,9 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('enterGroup', async ({ user_id, group_name }) => {
-          const user = await userGroupDetailQuery(socket.id, user_id, group_name)
-          // join room
-          if (user.length > 0) {
-            socket.join(user[0].group_name)
+          const user = await findGroupDataQuery(user_id, group_name)
+          if (user) {
+            socket.join(user.group_name)
             // socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
             // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
             await markAllUnreadMessagesAsReadQuery(user_id, group_name)
@@ -205,10 +204,9 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('leaveGroup', async ({ user_id, group_name }) => {
-          const user = await userGroupDetailQuery(socket.id, user_id, group_name)
-          // leave room
-          if (user.length > 0) {
-            socket.leave(user[0].group_name)
+          const user = await findGroupDataQuery(user_id, group_name)
+          if (user) {
+            socket.leave(user.group_name)
             // socket.emit('message', buildMsg(user[0]._id, user[0].username, `You have left the ${user[0].group_name} chat room`))
             // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('',user[0].username, `${user[0].username} has left the room`))
           } else {
@@ -235,16 +233,17 @@ export const socketConnection = async(server)=>{
         
                 const call = await logCallQuery(call_data);
                 const callee_data = await userDataQuery(callee_id);
+                const caller_data = await userDataQuery(caller_id);
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
-                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, callee_id,  `Incoming call!`, offer));
+                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`, offer));
                 }else{
-                  socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, callee_id, `The person you are trying to reach, is currently unavailable!`, offer))
+                  socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`, offer))
                 }
             } catch (error) {
                 console.error("Error initiating call:", error);
-        socket.emit("callError", { message: "Error initiating call" });
+                socket.emit("callError", { message: "Error initiating call" });
             }
         });
         
@@ -257,11 +256,11 @@ export const socketConnection = async(server)=>{
                 await updateCallAnswerQuery(call_id, start_time);
         
                 const call = await findCallById(call_id);
-                const caller_socket = await userDataQuery(call.caller_id);
-                // const callee_socket = await userDataQuery(call.callee_id);
+                const caller_socket = await userDataQuery(caller_id);
+                const callee_socket = await userDataQuery(call.callee_id);
         
                 // if (caller_socket) {
-                    socket.to(caller_socket.socket_id).emit("callAnswered", buildMsgForAnsCall(call_id, call.caller_id, call.callee_id, `Call is answered!`, ans));
+                    socket.broadcast.to(caller_socket.socket_id).emit("callAnswered", buildMsgForAnsCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is answered!`, ans));
                 // }else{
                 //   socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
                 // }
@@ -275,7 +274,8 @@ export const socketConnection = async(server)=>{
             await updateCallStatusQuery(call_id, "rejected");
             const call = await findCallById(call_id);
             const caller_socket = await userDataQuery(call.caller_id);
-            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
+            const callee_socket = await userDataQuery(call.callee_id);
+            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `The person you are trying to reach, is currently unavailable!`));
         });
 
         // Handle call ending
@@ -289,10 +289,10 @@ export const socketConnection = async(server)=>{
             const duration = (end_time - call.start_time) / 1000;
         
             await updateCallEndQuery(call_id, end_time, duration);
-        
+            const caller_socket = await userDataQuery(call.caller_id);
             const callee_socket = await userDataQuery(call.callee_id);
-            socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
-            socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, `Call is ended`, duration));
+            socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
+            socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
         });
 
         // Handle SDP Offer from Caller
@@ -360,11 +360,13 @@ function buildMsgExs(message_id, content, is_read) {
   }
 }
 
-function buildMsgForCall(call_id, caller_id, callee_id, text, offer) {
+function buildMsgForCall(call_id, caller_id, caller_name, callee_id, callee_name, text, offer) {
   return {
       call_id,
       caller_id,
+      caller_name,
       callee_id,
+      callee_name,
       text,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
@@ -376,11 +378,13 @@ function buildMsgForCall(call_id, caller_id, callee_id, text, offer) {
   }
 }
 
-function buildMsgForAnsCall(call_id, caller_id, callee_id, text, ans) {
+function buildMsgForAnsCall(call_id, caller_id, caller_name, callee_id, callee_name, text, ans) {
   return {
       call_id,
       caller_id,
+      caller_name,
       callee_id,
+      callee_name,
       text,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
@@ -392,10 +396,13 @@ function buildMsgForAnsCall(call_id, caller_id, callee_id, text, ans) {
   }
 }
 
-function buildMsgForCallEnd(call_id, caller_id, text, duration) {
+function buildMsgForCallEnd(call_id, caller_id, caller_name, callee_id, callee_name, text, duration) {
   return {
       call_id,
       caller_id,
+      caller_name,
+      callee_id,
+      callee_name,
       text,
       duration
   }

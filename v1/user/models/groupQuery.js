@@ -548,3 +548,12 @@ export const exitReadByArrayQuery = async (id, user_id) => {
         throw error;
     }
 }
+
+export const findGroupDataQuery = async ( user_id, group_name) => {
+    try {
+        return await GroupModel.findOne({group_name: group_name, members: user_id })
+    } catch (error) {
+        console.error('Error finding findGroupData details:', error);
+        throw error;
+    }
+}
