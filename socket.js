@@ -336,10 +336,10 @@ export const socketConnection = async(server)=>{
       });
     }
 
-function buildMsg(id, name, text, message_id, reply_content) {
+function buildMsg(id, username, text, message_id, reply_content) {
   return {
       id,
-      name,
+      username,
       text,
       message_id,
       reply_content,

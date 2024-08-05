@@ -126,7 +126,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                         message_id: "$_id",
                         group_id: 1,
                         senders_id: 1,
-                        'sender.username': 1,
+                        username: '$sender.username',
                         content: 1,
                         message_type: 1,
                         media: 1,
