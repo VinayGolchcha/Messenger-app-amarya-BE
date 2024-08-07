@@ -478,7 +478,49 @@ export const fetchNewMessagesForGroupNotificationQuery = async (id) => {
 
 export const fetchGroupDetailQuery = async(group_id) => {
     try {
-        return await GroupModel.findOne({_id: group_id}).select('_id group_name created_by members');
+        const groupDetails = await GroupModel.aggregate([
+            { $match: { _id: group_id } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'members',
+                    foreignField: '_id',
+                    as: 'membersDetails',
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'created_by',
+                    foreignField: '_id',
+                    as: 'adminDetails',
+                }
+            },
+            {
+                $unwind: {
+                    path: '$adminDetails'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    group_name: 1,
+                    created_by: 1,
+                    admin_name: '$adminDetails.username',
+                    members: {
+                        $map: {
+                            input: '$membersDetails',
+                            as: 'member',
+                            in: {
+                                id: '$$member._id',
+                                name: '$$member.username'
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
+        return groupDetails
     } catch (error) {
         console.error('Error finding fetchGroupdetailQuery details:', error);
         throw error;

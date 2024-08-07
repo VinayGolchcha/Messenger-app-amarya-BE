@@ -159,7 +159,7 @@ export const fetchGroupDetail = async (req, res) => {
         group_id = new mongoose.Types.ObjectId(group_id)
         const data = await fetchGroupDetailQuery(group_id);
         if (data.length == 0){
-            return notFoundResponse(res, '', `No Group Found In Data `)
+            return notFoundResponse(res, '', `No Group Found In Data`)
         }
         return successResponse(res, data, `Group fetched successfully!`);
     } catch (error) {
