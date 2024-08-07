@@ -326,8 +326,8 @@ export const socketConnection = async(server)=>{
       
         socket.on("peer:nego:done", async ({ caller_id, callee_id, ans }) => {
           console.log("peer:nego:done", ans);
-          const callee_socket = await userDataQuery(caller_id);
-          socket.broadcast.to(callee_socket.socket_id).emit("peer:nego:final", { caller_id, callee_id, ans });
+          const caller_socket = await userDataQuery(caller_id);
+          socket.broadcast.to(caller_socket.socket_id).emit("peer:nego:final", { caller_id, callee_id, ans });
         });
 
         socket.on('disconnect', () => {
