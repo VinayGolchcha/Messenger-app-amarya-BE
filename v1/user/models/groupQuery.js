@@ -520,7 +520,7 @@ export const fetchGroupDetailQuery = async(group_id) => {
                 }
             }
         ]);
-        return groupDetails
+        return groupDetails[0]
     } catch (error) {
         console.error('Error finding fetchGroupdetailQuery details:', error);
         throw error;
