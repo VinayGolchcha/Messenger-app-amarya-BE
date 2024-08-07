@@ -237,7 +237,7 @@ export const socketConnection = async(server)=>{
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
-                    socket.broadcast.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`, offer));
+                    socket.to(callee_data.socket_id).emit("callInitiated", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`, offer));
                 }else{
                   socket.emit("callInitiated", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`, offer))
                 }
@@ -260,7 +260,7 @@ export const socketConnection = async(server)=>{
                 const callee_socket = await userDataQuery(call.callee_id);
         
                 // if (caller_socket) {
-                    socket.broadcast.to(caller_socket.socket_id).emit("callAnswered", buildMsgForAnsCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is answered!`, ans));
+                    socket.to(caller_socket.socket_id).emit("callAnswered", buildMsgForAnsCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is answered!`, ans));
                 // }else{
                 //   socket.to(caller_socket.socket_id).emit("message", buildMsgForCall(call_id, '', `The person you are trying to reach, is currently unavailable!`));
                 // }
@@ -295,18 +295,6 @@ export const socketConnection = async(server)=>{
             socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
         });
 
-        // Handle SDP Offer from Caller
-        // socket.on('callInitiated', ({call_id, caller_id }) => {
-        //   console.log('Received offer:', call_id);
-        //     io.to(callee_id).emit('callInitiated',  buildMsgForCall(call_id, caller_id, `Incoming call!`));
-        // });
-
-        // Handle SDP Answer from Callee
-        // socket.on('callAnswered', ({ answer, caller_Id }) => {
-        //   console.log('Received answer:', )
-        //     io.to(caller_Id).emit('callAnswered', { answer });
-        // });
-
         // Handle ICE Candidates
         socket.on('iceCandidate', (candidate) => {
           console.log('Received candidate:', candidate);
@@ -321,13 +309,13 @@ export const socketConnection = async(server)=>{
         socket.on("peer:nego:needed", async ({ caller_id, callee_id, offer }) => {
           console.log("peer:nego:needed", offer);
           const callee_socket = await userDataQuery(callee_id);
-          socket.broadcast.to(callee_socket.socket_id).emit("peer:nego:needed", { caller_id, callee_id, offer });
+          socket.to(callee_socket.socket_id).emit("peer:nego:needed", { caller_id, callee_id, offer });
         });
       
         socket.on("peer:nego:done", async ({ caller_id, callee_id, ans }) => {
           console.log("peer:nego:done", ans);
           const caller_socket = await userDataQuery(caller_id);
-          socket.broadcast.to(caller_socket.socket_id).emit("peer:nego:final", { caller_id, callee_id, ans });
+          socket.to(caller_socket.socket_id).emit("peer:nego:final", { caller_id, callee_id, ans });
         });
 
         socket.on('disconnect', () => {
