@@ -4,6 +4,9 @@ import { fetchNewMessagesForNotificationQuery } from "../v1/user/models/messageQ
 import { createNotificationQuery, updateNotification } from "../v1/user/models/notificationQuery.js";
 import { sendMail } from "../config/nodemailer.js";
 import { fetchNewMessagesForGroupNotificationQuery } from "../v1/user/models/groupQuery.js";
+import mongoose from 'mongoose';
+import { GroupMessageModel } from '../v1/user/models/groupMessagesModel.js';
+import { GroupModel } from '../v1/user/models/groupModel.js';
 dotenv.config();
 
 
@@ -36,3 +39,19 @@ export const sendNotifications = async () => {
         throw error;
     }
 }
+
+export const checkAndUpdateIsReadStatus = async () => {
+  try {
+    const messages = await GroupMessageModel.find({ is_read: false });
+
+    for (const message of messages) {
+      const group = await GroupModel.findOne({ _id: message.group_id });
+      console.log("called");
+      if (message.read_by.length === group.members.length) {
+        await GroupMessageModel.updateOne({ _id: message._id }, { $set: { is_read: true } });
+      }
+    }
+  } catch (error) {
+    console.error('Error updating is_read status:', error);
+  }
+};

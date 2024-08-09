@@ -1,6 +1,6 @@
 
 import cron from "node-cron";
-import { sendNotifications } from "./cronFunctions.js";
+import { checkAndUpdateIsReadStatus, sendNotifications } from "./cronFunctions.js";
 
 
 export const runCronJobs = () => {
@@ -12,4 +12,12 @@ export const runCronJobs = () => {
             console.error('Error executing cron sendNotifications:', error);
         }
     });
+
+    // cron.schedule('* * * * *', async () => {
+    //     try {
+    //         await checkAndUpdateIsReadStatus()
+    //     } catch (error) {
+    //         console.error('Error executing cron checkAndUpdateIsReadStatus:', error);
+    //     }
+    // });
 }

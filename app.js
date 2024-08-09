@@ -77,6 +77,7 @@ try {
   console.error("Socket connection failed:", error);
 }
 monitorMessages()
+runCronJobs()
 
 const port = process.env.PORT || 6060;
 server.listen(port, () => {
