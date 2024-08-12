@@ -130,7 +130,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                         content: 1,
                         message_type: 1,
                         media: 1,
-                        sent_at: {
+                        time: {
                             $dateToString: {
                                 format: "%H:%M",
                                 date: "$sent_at",
