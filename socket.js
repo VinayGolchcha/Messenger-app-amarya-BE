@@ -286,11 +286,9 @@ export const socketConnection = async(server)=>{
         });
 
         // Handle call rejection
-        socket.on("rejectCall", async ({ call_id }) => {
-            await updateCallStatusQuery(call_id, "rejected");
-            const call = await findCallById(call_id)
-            const [callee_socket, caller_socket] = await Promise.all([ userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
-            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `The person you are trying to reach, is currently unavailable!`));
+        socket.on("rejectCall", async ({ caller_id }) => {
+            const caller_socket = await userDataQuery(caller_id) 
+            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall("", caller_id, caller_socket.username, "", "", `The person you are trying to reach, is currently unavailable!`));
         });
 
         // Handle call ending
