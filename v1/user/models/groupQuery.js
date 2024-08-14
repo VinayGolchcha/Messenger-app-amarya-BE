@@ -70,7 +70,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                 },
                 {
                     $addFields: {
-                        media_id: { $ifNull: ["$media_id", []] }
+                        media_id: { $cond: { if: { $isArray: "$media_id" }, then: "$media_id", else: [ "$media_id" ] } }
                     }
                 },
                 {
