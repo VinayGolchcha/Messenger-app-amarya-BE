@@ -6,7 +6,7 @@ const GroupMessageSchema = new mongoose.Schema({
     group_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Groups', required: true },
     senders_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     message_type: { type: String, enum: ['text', 'image', 'audio', 'video', 'document'], required: true},
-    media_id : { type: mongoose.Schema.Types.ObjectId, ref: 'Media'},
+    media_id : {type: [{type : mongoose.Schema.Types.ObjectId, ref: 'Media'}]},
     content: { type: String, default: null},
     sent_at: { type: Date, default: new Date},
     is_read: { type: Boolean, default: false},
