@@ -217,32 +217,13 @@ export const socketConnection = async(server)=>{
 /////////////////////////////////VOICE CALLING////////////////////////////////////////////////////
           socket.on("preInitiateCall", async ({ caller_id, callee_id }) => {
             try {
-                caller_id = new mongoose.Types.ObjectId(caller_id);
-                callee_id = new mongoose.Types.ObjectId(callee_id);
-
-                const [callee_data, caller_data] = await Promise.all([userDataQuery(callee_id), userDataQuery(caller_id)]) 
-                const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
-
-                if (callee_socket) {
-                    socket.to(callee_data.socket_id).emit("preInitiateCall", buildMsgForCall('', caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
-                }else{
-                  socket.emit("preInitiateCall", buildMsgForCall('', caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
-                }
-            } catch (error) {
-                console.error("Error initiating call:", error);
-                socket.emit("callError", { message: "Error initiating call" });
-            }
-          });
-
-          socket.on("initiateCall", async ({ caller_id, callee_id, offer }) => {
-            try {
                 const istTime = moment.tz('Asia/Kolkata');
                 const utcTime = istTime.utc().toDate();
                 let status = "initiated";
                 let call_initiated_time = utcTime;
                 caller_id = new mongoose.Types.ObjectId(caller_id);
                 callee_id = new mongoose.Types.ObjectId(callee_id);
-        
+
                 const call_data = {
                     caller_id,
                     callee_id,
@@ -251,6 +232,26 @@ export const socketConnection = async(server)=>{
                 };
         
                 const [call, callee_data, caller_data] = await Promise.all([logCallQuery(call_data), userDataQuery(callee_id), userDataQuery(caller_id)]) 
+                const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
+                socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
+                if (callee_socket) {
+                    socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
+                }else{
+                  socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
+                }
+                
+            } catch (error) {
+                console.error("Error initiating call:", error);
+                socket.emit("callError", { message: "Error initiating call" });
+            }
+          });
+
+          socket.on("initiateCall", async ({ call_id, caller_id, callee_id, offer }) => {
+            try {
+                caller_id = new mongoose.Types.ObjectId(caller_id);
+                callee_id = new mongoose.Types.ObjectId(callee_id);
+        
+                const [call, callee_data, caller_data] = await Promise.all([findCallById(call_id), userDataQuery(callee_id), userDataQuery(caller_id)]) 
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
@@ -286,9 +287,10 @@ export const socketConnection = async(server)=>{
         });
 
         // Handle call rejection
-        socket.on("rejectCall", async ({ caller_id }) => {
-            const caller_socket = await userDataQuery(caller_id) 
-            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall("", caller_id, caller_socket.username, "", "", `The person you are trying to reach, is currently unavailable!`));
+        socket.on("rejectCall", async ({ call_id, caller_id }) => {
+            const call = await findCallById(call_id);
+            const [ callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(caller_id)]) 
+            socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `The person you are trying to reach, is currently unavailable!`));
         });
 
         // Handle call ending
