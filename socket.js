@@ -301,12 +301,19 @@ export const socketConnection = async(server)=>{
             let end_time = utcTime;
         
             const call = await findCallById(call_id);
-            const duration = (end_time - call.start_time) / 1000;
-        
-            await updateCallEndQuery(call_id, end_time, duration);
-            const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
-            socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
-            socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
+
+            if(call.start_time == null){
+              await updateCallEndQuery(call_id, end_time, 0);
+              const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
+              socket.emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
+              socket.to(callee_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
+            }else{
+              const duration = (end_time - call.start_time) / 1000;
+              await updateCallEndQuery(call_id, end_time, duration);
+              const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
+              socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
+              socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
+            }
         });
 
         // Handle ICE Candidates
