@@ -236,6 +236,7 @@ export const socketConnection = async(server)=>{
                 socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
                 if (callee_socket) {
                     socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
+                    socket.to(callee_data.socket_id).emit("preInitiateCall", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                 }else{
                   socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
                 }
