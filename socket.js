@@ -9,7 +9,7 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 
-import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery} from "./v1/user/models/voiceQuery.js";
+import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery, updateMissedCallStatusQuery} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -233,11 +233,13 @@ export const socketConnection = async(server)=>{
         
                 const [call, callee_data, caller_data] = await Promise.all([logCallQuery(call_data), userDataQuery(callee_id), userDataQuery(caller_id)]) 
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
-                socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
+               
                 if (callee_socket) {
+                    socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
                     socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                     socket.to(callee_data.socket_id).emit("preInitiateCall", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                 }else{
+                  await updateMissedCallStatusQuery(call._id)
                   socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
                 }
                 

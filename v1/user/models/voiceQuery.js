@@ -72,9 +72,122 @@ export const findCallById = async (callId) => {
 
 export const fetchCallLogsHistoryQuery = async (caller_id) => {
     try {
-        return await VoiceModel.find({$or: [{caller_id: caller_id}, {callee_id : caller_id}] });
+        const pipeline = [
+            {
+                $match: {
+                    $or: [
+                        { caller_id: caller_id },
+                        { callee_id: caller_id }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'caller_id',
+                    foreignField: '_id',
+                    as: 'caller'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'callee_id',
+                    foreignField: '_id',
+                    as: 'callee'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$caller',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $unwind: {
+                    path: '$callee',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    caller_name: "$caller.username",
+                    callee_name: "$callee.username",
+                    call_type: {
+                        $cond: {
+                            if: { $eq: ["$caller_id", caller_id] }, 
+                            then: {
+                                $cond: {
+                                    if: { $eq: ["$status", "missed"] }, 
+                                    then: "outgoing_missed", 
+                                    else: "outgoing"
+                                }
+                            },
+                            else: {
+                                $cond: {
+                                    if: { $eq: ["$status", "missed"] }, 
+                                    then: "incoming_missed", 
+                                    else: "incoming"
+                                }
+                            }
+                        }
+                    },
+                    duration: {
+                        $cond: {
+                            if: { $and: [{ $ne: ["$start_time", null] }, { $ne: ["$end_time", null] }] },
+                            then: { 
+                                $divide: [{ $subtract: ["$end_time", "$start_time"] }, 1000] // Convert milliseconds to seconds
+                            },
+                            else: 0.00
+                        }
+                    }
+                },
+            },
+            {
+                $addFields: {
+                    duration: {
+                        $toDouble: {
+                            $round: ["$duration", 2]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { updatedAt: -1 }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    caller_id: 1,
+                    callee_id: 1,
+                    caller_name: '$caller_name',
+                    callee_name: '$callee_name',
+                    call_type: '$call_type',
+                    call_duration: '$duration',  //in seconds
+                    status: 1
+                }
+            }
+        ];
+        return await VoiceModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error fetching call logs history:', error);
+        throw error;
+    }
+};
+
+export const updateMissedCallStatusQuery = async (callId) => {
+    try {
+        const updatedCall = await VoiceModel.findByIdAndUpdate(
+            callId,
+            { status: 'missed' },
+            { new: true }
+        );
+        if (!updatedCall) {
+            throw new Error('Call not found');
+        }
+        return updatedCall;
+    } catch (error) {
+        console.error('Error updateMissedCallStatusQuery call:', error);
         throw error;
     }
 };

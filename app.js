@@ -43,15 +43,12 @@ try {
   console.error("Database connection failed:", error);
 }
 
-// SSL/TLS Certificate options
 const isProduction = process.env.NODE_ENV === 'production';
 let server;
 
 if (isProduction) {
-  // Use HTTP for cloud platforms which provide HTTPS termination
   server = http.createServer(app);
 } else {
-  // Use HTTPS for local development
   let sslOptions = {};
   try {
     sslOptions = {
@@ -63,12 +60,6 @@ if (isProduction) {
   }
   server = https.createServer(sslOptions, app);
 }
-
-// Create an HTTPS server with SSL/TLS
-// const port = process.env.PORT || 6060;
-// const expressServer = https.createServer(sslOptions, app).listen(port, () => {
-//   console.log(`Server is running on port ${port}`);
-// });
 
 try {
   await socketConnection(server);
