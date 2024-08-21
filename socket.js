@@ -179,7 +179,7 @@ export const socketConnection = async(server)=>{
           const reply_message = await addRepliedGroupMessageDetailQuery(replied_message_id, message_cr._id)
           const reply_message_data = await repliedGroupMessageDetailQuery(reply_message.replied_message_id)
 
-          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content))
+          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content, reply_message_data[0].sender_name))
 
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
               const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
@@ -348,13 +348,14 @@ export const socketConnection = async(server)=>{
       });
     }
 
-function buildMsg(id, username, text, message_id, reply_content) {
+function buildMsg(id, username, text, message_id, reply_content, reply_sender) {
   return {
       id,
       username,
       text,
       message_id,
       reply_content,
+      reply_sender,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
           minute: 'numeric',

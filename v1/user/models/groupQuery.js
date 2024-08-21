@@ -119,6 +119,19 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'replied_message.senders_id',
+                        foreignField: '_id',
+                        as: 'sender'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$sender'
+                    }
+                },
+                {
                     $sort: { sent_at: -1 }
                 },
                 {
@@ -143,6 +156,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                         replied_message: {
                             message_id: "$replied_message._id",
                             senders_id: "$replied_message.senders_id",
+                            reply_sender: "$sender.username",
                             content: "$replied_message.content",
                             time: {
                                 $dateToString: {
