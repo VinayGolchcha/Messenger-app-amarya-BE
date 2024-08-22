@@ -92,7 +92,7 @@ export const socketConnection = async(server)=>{
           const reply_message_data = await repliedMessageDetailQuery(reply_message.replied_message_id)
 
           if (recipient_socket){
-            socket.to(reciever_data.socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id, reply_message_data[0].content));
+            socket.to(reciever_data.socket_id).emit("message", buildMsg(sender_data._id, sender_data.username, message, data._id, reply_message_data[0].content, reply_message_data[0].sender_name));
           }
 
           await addEntryForDeleteChatQuery(data._id, sender_data._id, reciever_data._id)

@@ -583,8 +583,22 @@ export const repliedMessageDetailQuery = async(id) => {
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'message.senders_id',
+                        foreignField: '_id',
+                        as: 'sender'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$sender'
+                    }
+                },
+                {
                     $project: {
                         senders_id: "$message.senders_id",
+                        sender_name: "$sender.username",
                         recievers_id: "$message.recievers_id",
                         message_type: "$message.message_type",
                         media_id: "$message.media_id", 

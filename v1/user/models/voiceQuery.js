@@ -149,6 +149,18 @@ export const fetchCallLogsHistoryQuery = async (caller_id) => {
                         $toDouble: {
                             $round: ["$duration", 2]
                         }
+                    },
+                    name: {
+                        $cond: {
+                            if: {
+                                $or: [
+                                    { $eq: ["$call_type", "incoming"] },
+                                    { $eq: ["$call_type", "incoming_missed"] }
+                                ]
+                            },
+                            then: "$caller_name",
+                            else: "$callee_name"
+                        }
                     }
                 }
             },
@@ -160,9 +172,8 @@ export const fetchCallLogsHistoryQuery = async (caller_id) => {
                     _id: 1,
                     caller_id: 1,
                     callee_id: 1,
-                    caller_name: '$caller_name',
-                    callee_name: '$callee_name',
                     call_type: '$call_type',
+                    username: '$name',
                     call_duration: '$duration',  //in seconds
                     status: 1
                 }
