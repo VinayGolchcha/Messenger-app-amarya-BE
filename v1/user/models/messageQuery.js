@@ -166,6 +166,19 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                     }
                 },
                 {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'replied_message.senders_id',
+                        foreignField: '_id',
+                        as: 'reply_sender'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$reply_sender'
+                    }
+                },
+                {
                     $sort: { sent_at: -1 }
                 },
                 {
@@ -191,6 +204,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                         replied_message: {
                             message_id: "$replied_message._id",
                             senders_id: "$replied_message.senders_id",
+                            reply_sender: "$reply_sender.username",
                             content: "$replied_message.content",
                             time: {
                                 $dateToString: {
