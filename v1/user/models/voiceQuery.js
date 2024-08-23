@@ -175,7 +175,15 @@ export const fetchCallLogsHistoryQuery = async (caller_id) => {
                     call_type: '$call_type',
                     username: '$name',
                     call_duration: '$duration',  //in seconds
-                    status: 1
+                    status: 1,
+                    time: {
+                        $dateToString: {
+                            format: "%H:%M",
+                            date: "$createdAt",
+                            timezone: "+05:30"
+                        }
+                    },
+                    date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
                 }
             }
         ];
