@@ -175,7 +175,8 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                 },
                 {
                     $unwind: {
-                        path: '$reply_sender'
+                        path: '$reply_sender',
+                        preserveNullAndEmptyArrays: true
                     }
                 },
                 {

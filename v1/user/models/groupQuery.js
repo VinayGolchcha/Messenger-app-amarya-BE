@@ -128,7 +128,8 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                 },
                 {
                     $unwind: {
-                        path: '$reply_sender'
+                        path: '$reply_sender',
+                        preserveNullAndEmptyArrays: true
                     }
                 },
                 {
