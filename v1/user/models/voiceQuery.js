@@ -118,14 +118,14 @@ export const fetchCallLogsHistoryQuery = async (caller_id) => {
                             if: { $eq: ["$caller_id", caller_id] }, 
                             then: {
                                 $cond: {
-                                    if: { $eq: ["$status", "missed"] }, 
+                                    if: { $in: ["$status", ["missed", "rejected"]] }, 
                                     then: "outgoing_missed", 
                                     else: "outgoing"
                                 }
                             },
                             else: {
                                 $cond: {
-                                    if: { $eq: ["$status", "missed"] }, 
+                                    if: { $in: ["$status", ["missed", "rejected"]] }, 
                                     then: "incoming_missed", 
                                     else: "incoming"
                                 }
