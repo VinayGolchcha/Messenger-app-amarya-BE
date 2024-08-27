@@ -87,7 +87,8 @@ export const userLogin = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: false, // Cookie is accessible only through HTTP(S) protocol
             sameSite: 'None', // Allow cross-site usage
-            secure: true // Ensures the cookie is only sent over HTTPS
+            secure: true, // Ensures the cookie is only sent over HTTPS
+            maxAge: 24 * 60 * 60 * 1000
           });
         return successResponse(res, { user_id: currentUser._id, user_name: currentUser.username + " " , email: email, is_email_verified: is_email_verified, token: token, socket_id: currentUser.socket_id }, message);
     } catch (error) {
@@ -100,14 +101,14 @@ export const userLogout = async (req, res) => {
     try {
         const user_id = req.params.id;
         await insertTokenQuery("", user_id);
-        if(user_id){
-            res.clearCookie('token', {
-                httpOnly: false,
-                sameSite: 'None',
-                secure: true,
-                path: '/',
-              });
-        }
+        // if(user_id){
+        //     res.clearCookie('token', {
+        //         httpOnly: false,
+        //         sameSite: 'None',
+        //         secure: true,
+        //         path: '/',
+        //       });
+        // }
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
         console.error(error);
