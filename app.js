@@ -27,6 +27,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Import & Define API versions
 app.use('/api/v1', routes);
