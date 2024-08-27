@@ -99,8 +99,13 @@ export const userLogin = async (req, res) => {
 export const userLogout = async (req, res) => {
     try {
         const user_id = req.params.id;
-        console.log(req.decoded)
         await insertTokenQuery("", user_id);
+        res.clearCookie('token', {
+            httpOnly: false,
+            sameSite: 'None',
+            secure: true,
+            path: '/',
+          });
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
         console.error(error);
