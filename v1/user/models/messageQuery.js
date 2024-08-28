@@ -439,7 +439,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
         const pipeline = [
             {
                 $match: { 
-                        recievers_id: user_id
+                    recievers_id: user_id
                 }
             },
             {
@@ -490,7 +490,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 $group: {
                     _id: "$senders_id",
                     sender_name: { $first: "$sender.username" },
-                    socket_id: {$first: "$sender.socket_id"},
+                    socket_id: { $first: "$sender.socket_id" },
                     reciever_username: { $first: "$receiver.username" },
                     messages: {
                         $push: {
@@ -503,27 +503,33 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                                 file_name: "$media.file_name",
                                 file_data: "$media.file_data"
                             },
+                            sent_at: "$sent_at",
                             time: {
                                 $dateToString: {
                                     format: "%H:%M",
                                     date: "$sent_at",
                                     timezone: "+05:30"
                                 }
-                            }
+                            },
+                            date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
                         }
                     },
                     new_messages_count: {
                         $sum: {
                             $cond: [{ $eq: ["$is_new", true] }, 1, 0]
                         }
-                    }
+                    },
+                    last_message_time: { $first: "$sent_at" }
                 }
+            },
+            {
+                $sort: { last_message_time: -1 }
             },
             {
                 $project: {
                     senders_id: "$_id",
                     sender_name: 1,
-                    socket_id: "$socket_id",
+                    socket_id: 1,
                     reciever_username: 1, 
                     messages: { $slice: ["$messages", limit_per_sender] },
                     new_messages_count: 1,
@@ -531,10 +537,136 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                 }
             }
         ];
-
         return await MessageModel.aggregate(pipeline);
     } catch (error) {
         console.error('Error finding fetchConversationListQuery details:', error);
+        throw error;
+    }
+}
+
+export const fetchRemainingConversationListQuery = async(user_id, limit_per_sender = 1) => {
+    try {
+        const pipeline = [
+            {
+                $match: { 
+                    senders_id: user_id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'media',
+                    localField: 'media_id',
+                    foreignField: '_id',
+                    as: 'media_details'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$media_details',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: "$recievers_id",
+                    messages: {
+                        $push: {
+                            content: "$content",
+                            message_type: "$message_type",
+                            is_read: "$is_read",
+                            media_id: "$media_id",
+                            media_details: {
+                                file_type: "$media_details.file_type",
+                                file_name: "$media_details.file_name",
+                                file_data: "$media_details.file_data"
+                            },
+                            sent_at: "$sent_at",
+                            time: {
+                                $dateToString: {
+                                    format: "%H:%M",
+                                    date: "$sent_at",
+                                    timezone: "+05:30"
+                                }
+                            },
+                            date: { 
+                                $dateToString: { 
+                                    format: "%Y-%m-%d", 
+                                    date: "$sent_at" 
+                                } 
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'receiver'
+                }
+            },
+            {
+                $unwind: '$receiver'
+            },
+            // {
+            //     $lookup: {
+            //         from: 'users',
+            //         localField: 'senders_id',
+            //         foreignField: '_id',
+            //         as: 'sender'
+            //     }
+            // },
+            // {
+            //     $unwind: '$sender'
+            // },
+            {
+                $lookup: {
+                    from: 'messages',
+                    let: { receiverId: "$_id" },
+                    pipeline: [
+                        { 
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$senders_id", "$$receiverId"] },
+                                        { $eq: ["$recievers_id", user_id] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'replies'
+                }
+            },
+            {
+                $addFields: {
+                    hasReplies: { $gt: [{ $size: "$replies" }, 0] }
+                }
+            },
+            {
+                $match: {
+                    hasReplies: false
+                }
+            },
+            {
+                $sort: { "messages.sent_at": -1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    senders_id: "$receiver._id",
+                    sender_name: "$receiver.username",
+                    // reciever_username: "$sender.username",
+                    socket_id: "$receiver.socket_id",
+                    messages: { $slice: ["$messages", limit_per_sender] },
+                    new_messages_count: { $toInt: '0' }
+                }
+            }
+        ];
+        return await MessageModel.aggregate(pipeline);
+    } catch (error) {
+        console.error('Error finding fetchRemainingConversationListQuery details:', error);
         throw error;
     }
 }

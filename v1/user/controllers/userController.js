@@ -7,7 +7,8 @@ import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse,
 import {create, userDetailQuery, insertTokenQuery, findAllUserDetailQuery, findUserByNameQuery, userDataQuery,fetchUserProfileQuery} from "../models/userQuery.js"
 import { uploadMediaQuery } from "../models/mediaQuery.js";
 import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, checkUserForGivenMessageQuery, updateDeleteStatusForUserQuery, 
-    deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery} from "../models/messageQuery.js";
+    deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery,
+    fetchRemainingConversationListQuery} from "../models/messageQuery.js";
 import { checkIfUserIsAdminQuery, deleteGroupChatCompleteQuery, deleteGroupMessageByIdQuery, fetchGroupConversationListQuery, findGroupByNameQuery, updateDeleteUserStatusForGroupQuery } from "../models/groupQuery.js";
 
 dotenv.config();
@@ -376,9 +377,10 @@ export const fetchConversationsList = async (req, res) => {
 
         let user_id = req.params.user_id;
         user_id = new mongoose.Types.ObjectId(user_id)
-        const private_data = await fetchConversationListQuery(user_id)
-
-        return successResponse(res, private_data, `Data fetched successfully!`);
+        let private_data = await fetchConversationListQuery(user_id)
+        const final_data = await fetchRemainingConversationListQuery(user_id)
+        const merged_array = private_data.concat(final_data)
+        return successResponse(res, merged_array, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
