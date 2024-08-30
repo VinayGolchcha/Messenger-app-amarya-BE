@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
-import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery, exitGroupQuery, exitReadByArrayQuery} from "../models/groupQuery.js"
+import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery, exitGroupQuery, exitReadByArrayQuery, getGroupMembersAndDetailsQuery, deleteGroupByIdQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
 
 dotenv.config();
@@ -25,6 +25,18 @@ export const createGroup = async (req, res) => {
             return notFoundResponse(res, '', 'Group name already exists, please create a new name')
         }
         
+        if(members.length == 0){
+            return errorResponse(res, '', 'Members list is empty, pls add members to proceed')
+        }else if(members.length == 1){
+            const exists = members.includes(user_id);
+            if (exists == true){
+                return errorResponse(res, '', 'Only Admin cannot create the group, one other member is required to proceed for group creation.')
+            }
+        }
+        const exists = members.includes(user_id);
+        if (exists == false){
+            members.push(user_id);
+        }
         const group_data = {
             group_name: group_name,
             created_by: user_data._id,
@@ -56,13 +68,16 @@ export const updateGroup = async (req, res) => {
         if(!is_user_admin){
             return notFoundResponse(res, '', 'User does not have access to update the group details, only admin user can update the details.')
         }
+        if(members.length == 0){
+            await deleteGroupByIdQuery(group_id)
+        }
         
         const group_data = {
             group_name: group_name,
             members: members
         }
-        const is_group = await updateGroupQuery(group_id, group_data)
-       
+        await updateGroupQuery(group_id, group_data)
+        const [is_group] = await getGroupMembersAndDetailsQuery(group_id)
         return successResponse(res, is_group, `Group updated successfully`);
     } catch (error) {
         console.error(error);

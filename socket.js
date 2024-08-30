@@ -8,7 +8,6 @@ import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQue
   userDataQuery} from "./v1/user/models/userQuery.js"
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
-
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery, updateMissedCallStatusQuery} from "./v1/user/models/voiceQuery.js";
 export const socketConnection = async(server)=>{
     const io = new Server(server, {

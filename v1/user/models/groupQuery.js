@@ -551,6 +551,15 @@ export const deleteGroupMessageByIdQuery = async(message_id) => {
     }
 }
 
+export const deleteGroupByIdQuery = async(group_id) => {
+    try {
+        return await GroupModel.deleteOne({ _id: new mongoose.Types.ObjectId(group_id) });
+    } catch (error) {
+        console.error('Error in deleteGroupByIdQuery details:', error);
+        throw error;
+    }
+}
+
 export const checkIfUserIsAdminQuery = async(user_id) => {
     try {
         return await GroupModel.findOne({ created_by: new mongoose.Types.ObjectId(user_id) });
@@ -611,6 +620,36 @@ export const findGroupDataQuery = async ( user_id, group_name) => {
         return await GroupModel.findOne({group_name: group_name, members: user_id })
     } catch (error) {
         console.error('Error finding findGroupData details:', error);
+        throw error;
+    }
+}
+
+
+export const getGroupMembersAndDetailsQuery = async ( group_id ) => {
+    try {
+        return await GroupModel.aggregate([
+            { $match: { _id: group_id } }, 
+            {
+              $lookup: {
+                from: "users",
+                localField: "members",
+                foreignField: "_id",
+                as: "members_info"
+              }
+            },
+            {
+              $project: {
+                group_name: 1,
+                created_by: 1,
+                updatedAt: 1,
+                createdAt: 1,
+                "members_info._id": 1,
+                "members_info.username": 1
+              }
+            }
+          ]);
+    } catch (error) {
+        console.error('Error finding getGroupMembersAndDetailsQuery details:', error);
         throw error;
     }
 }
