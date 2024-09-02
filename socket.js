@@ -146,7 +146,7 @@ export const socketConnection = async(server)=>{
           const message_cr = await addGroupMessageQuery(message_data)
           await updateReadByStatusQuery(message_cr._id, user._id)
 
-          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id))
+          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id,'' , '', group_id._id))
 
           const id = new mongoose.Types.ObjectId(group_id._id)
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
@@ -178,7 +178,7 @@ export const socketConnection = async(server)=>{
           const reply_message = await addRepliedGroupMessageDetailQuery(replied_message_id, message_cr._id)
           const reply_message_data = await repliedGroupMessageDetailQuery(reply_message.replied_message_id)
 
-          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content, reply_message_data[0].sender_name))
+          socket.broadcast.to(group_name).emit('message', buildMsg(user._id, user.username, message, message_cr._id, reply_message_data[0].content, reply_message_data[0].sender_name, group_id._id))
 
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
               const exists = user.mute_notifications.groups.some(obj => obj.group_id.equals(id))
@@ -345,7 +345,7 @@ export const socketConnection = async(server)=>{
       });
     }
 
-function buildMsg(id, username, text, message_id, reply_content, reply_sender) {
+function buildMsg(id, username, text, message_id, reply_content, reply_sender, group_id) {
   return {
       id,
       username,
@@ -353,6 +353,7 @@ function buildMsg(id, username, text, message_id, reply_content, reply_sender) {
       message_id,
       reply_content,
       reply_sender,
+      group_id,
       time: new Intl.DateTimeFormat('default', {
           hour: 'numeric',
           minute: 'numeric',
