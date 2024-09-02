@@ -379,8 +379,9 @@ export const fetchConversationsList = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
         let private_data = await fetchConversationListQuery(user_id)
         const final_data = await fetchRemainingConversationListQuery(user_id)
-        const merged_array = private_data.concat(final_data)
-        return successResponse(res, merged_array, `Data fetched successfully!`);
+        const merged_array = [...private_data, ...final_data];
+        const sorted_array = merged_array.sort((a, b) => b.messages.sent_at - a.messages.sent_at);
+        return successResponse(res, sorted_array, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

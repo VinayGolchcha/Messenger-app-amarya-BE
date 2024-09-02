@@ -434,7 +434,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
     }
 }
 
-export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) => {
+export const fetchConversationListQuery = async(user_id) => {
     try {
         const pipeline = [
             {
@@ -493,7 +493,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                     socket_id: { $first: "$sender.socket_id" },
                     reciever_username: { $first: "$receiver.username" },
                     messages: {
-                        $push: {
+                        $first: {
                             content: "$content",
                             message_type: "$message_type",
                             is_read: "$is_read",
@@ -531,7 +531,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
                     sender_name: 1,
                     socket_id: 1,
                     reciever_username: 1, 
-                    messages: { $slice: ["$messages", limit_per_sender] },
+                    messages: 1,
                     new_messages_count: 1,
                     _id: 0
                 }
@@ -544,7 +544,7 @@ export const fetchConversationListQuery = async(user_id, limit_per_sender = 1) =
     }
 }
 
-export const fetchRemainingConversationListQuery = async(user_id, limit_per_sender = 1) => {
+export const fetchRemainingConversationListQuery = async(user_id) => {
     try {
         const pipeline = [
             {
@@ -570,7 +570,7 @@ export const fetchRemainingConversationListQuery = async(user_id, limit_per_send
                 $group: {
                     _id: "$recievers_id",
                     messages: {
-                        $push: {
+                        $first: {
                             content: "$content",
                             message_type: "$message_type",
                             is_read: "$is_read",
@@ -659,7 +659,7 @@ export const fetchRemainingConversationListQuery = async(user_id, limit_per_send
                     sender_name: "$receiver.username",
                     // reciever_username: "$sender.username",
                     socket_id: "$receiver.socket_id",
-                    messages: { $slice: ["$messages", limit_per_sender] },
+                    messages: 1,
                     new_messages_count: { $toInt: '0' }
                 }
             }

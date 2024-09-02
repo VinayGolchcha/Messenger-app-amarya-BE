@@ -134,9 +134,9 @@ export const fetchGroupDataForUser = async (req, res) => {
             const mergedArray = Array.from(map.values());
             return mergedArray;
           };
-          const mergedArray = mergeArrays(group_data, data);
+          const merged_array = mergeArrays(group_data, data);
           
-        return successResponse(res, mergedArray, `Group Data fetched successfully!`);
+        return successResponse(res, merged_array, `Group Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

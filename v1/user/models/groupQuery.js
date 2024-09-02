@@ -250,7 +250,7 @@ export const findMessageinGroupQuery = async(search_text, group_id) => {
     }
 }
 
-export const fetchGroupConversationListQuery = async(user_id, limit_per_sender = 1) => {
+export const fetchGroupConversationListQuery = async(user_id) => {
     try {
         const pipeline = [
             {
@@ -266,12 +266,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
             },
             {
                 $match: { 
-                        'group.members': user_id
-                }
-            },
-            {
-                $match: {
-                    senders_id: { $ne: user_id }
+                    'group.members': user_id
                 }
             },
             {
@@ -304,16 +299,17 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
             },
             {
                 $group: {
-                    _id: "$senders_id",
+                    _id: "$group_id",
+                    senders_id : { $first: "$sender._id" },
                     sender_name: { $first: "$sender.username" },
-                    sender_socket_id: {$first: "$sender.socket_id"},
+                    sender_socket_id: { $first: "$sender.socket_id" },
                     group_id: { $first: "$group._id" },
                     group_name: { $first: "$group.group_name" },
                     members: { $first: "$group.members" },
                     created_by: { $first: "$group.created_by" },
                     is_read: { $first: "$group.is_read" },
-                    messages: {
-                        $push: {
+                    message: {
+                        $first: {
                             senders_id: "$senders_id",
                             content: "$content",
                             message_type: "$message_type",
@@ -329,7 +325,8 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
                                     date: "$sent_at",
                                     timezone: "+05:30"
                                 }
-                            }
+                            },
+                            date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
                         }
                     },
                     new_messages_count: {
@@ -341,15 +338,15 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
             },
             {
                 $project: {
-                    senders_id: "$_id",
+                    group_id: "$_id",
+                    senders_id: 1, 
                     sender_name: 1,
-                    sender_socket_id: "$sender_socket_id",
-                    group_id: 1,
+                    sender_socket_id: 1,
                     group_name: 1,
                     members: 1,
                     created_by: 1, 
                     is_read: 1,
-                    messages: { $slice: ["$messages", limit_per_sender] },
+                    message: 1,
                     new_messages_count: 1,
                     _id: 0
                 }
@@ -362,6 +359,7 @@ export const fetchGroupConversationListQuery = async(user_id, limit_per_sender =
         throw error;
     }
 }
+
 
 export const updateReadByStatusQuery = async(id, user_id) => {
     try {
