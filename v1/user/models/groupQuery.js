@@ -202,7 +202,13 @@ export const fetchGroupsDataForUserQuery = async(user_id) => {
                     new_messages_count: null,
                     senders_id: null,
                     sender_socket_id: null, 
-                    messages: []
+                    content: null,
+                    message_type : null,
+                    is_read : null,
+                    media_id :null,
+                    media_details : null,
+                    time : null,
+                    date : null,
                 }
             },
             {
@@ -310,7 +316,6 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                     is_read: { $first: "$group.is_read" },
                     message: {
                         $first: {
-                            senders_id: "$senders_id",
                             content: "$content",
                             message_type: "$message_type",
                             media_id: "$media_id",
@@ -346,7 +351,13 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                     members: 1,
                     created_by: 1, 
                     is_read: 1,
-                    message: 1,
+                    content: "$message.content",
+                    message_type : "$message.message_type",
+                    is_read : "$message.is_read",
+                    media_id : "$message.media_id",
+                    media_details : "$message.media_details",
+                    time : "$message.time",
+                    date : "$message.date",
                     new_messages_count: 1,
                     _id: 0
                 }

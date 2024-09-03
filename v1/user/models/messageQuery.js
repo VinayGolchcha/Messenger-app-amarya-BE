@@ -531,7 +531,14 @@ export const fetchConversationListQuery = async(user_id) => {
                     sender_name: 1,
                     socket_id: 1,
                     reciever_username: 1, 
-                    messages: 1,
+                    content : "$messages.content",
+                    message_type : "$messages.message_type",
+                    is_read : "$messages.is_read",
+                    media_id : "$messages.media_id",
+                    media_details : "$messages.media_details",
+                    time : "$messages.time",
+                    date : "$messages.date",
+                    sent_at : "$messages.sent_at",
                     new_messages_count: 1,
                     _id: 0
                 }
@@ -659,7 +666,14 @@ export const fetchRemainingConversationListQuery = async(user_id) => {
                     sender_name: "$receiver.username",
                     // reciever_username: "$sender.username",
                     socket_id: "$receiver.socket_id",
-                    messages: 1,
+                    content : "$messages.content",
+                    message_type : "$messages.message_type",
+                    is_read : "$messages.is_read",
+                    media_id : "$messages.media_id",
+                    media_details : "$messages.media_details",
+                    time : "$messages.time",
+                    date : "$messages.date",
+                    sent_at : "$messages.sent_at",
                     new_messages_count: { $toInt: '0' }
                 }
             }

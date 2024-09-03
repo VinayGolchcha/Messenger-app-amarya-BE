@@ -380,7 +380,7 @@ export const fetchConversationsList = async (req, res) => {
         let private_data = await fetchConversationListQuery(user_id)
         const final_data = await fetchRemainingConversationListQuery(user_id)
         const merged_array = [...private_data, ...final_data];
-        const sorted_array = merged_array.sort((a, b) => b.messages.sent_at - a.messages.sent_at);
+        const sorted_array = merged_array.sort((a, b) => b.sent_at - a.sent_at);
         return successResponse(res, sorted_array, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
