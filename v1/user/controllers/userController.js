@@ -10,7 +10,7 @@ import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, c
     deleteMessageByIdQuery, updateDeleteStatusForAllMessagesInChatQuery, fetchConversationListQuery,
     fetchRemainingConversationListQuery} from "../models/messageQuery.js";
 import { checkIfUserIsAdminQuery, deleteGroupChatCompleteQuery, deleteGroupMessageByIdQuery, fetchGroupConversationListQuery, findGroupByNameQuery, updateDeleteUserStatusForGroupQuery } from "../models/groupQuery.js";
-
+import {generateDownloadLink} from '../../helpers/mediaDownloadableLink.js'
 dotenv.config();
 
 export const userInput = async (req, res) => {
@@ -132,17 +132,22 @@ export const uploadFiles = async (req, res) => {
         let response = []
         user_id = new mongoose.Types.ObjectId(user_id)
 
-        for (let image of files){
-            const files_data = {
-                file_type : file_type,
-                file_name : image.originalname,
-                file_data : image.buffer,
-                uploaded_by: user_id
+        for (let file of files){
+            try {
+                const download_link = await generateDownloadLink(file.buffer, file_type, file.originalname);
+                const file_data = {
+                  file_type: file_type,
+                  file_name: file.originalname,
+                  download_link: download_link,
+                  uploaded_by: user_id
+                };
+                
+                const data = await uploadMediaQuery(file_data);
+                response.push(data);
+              } catch (error) {
+                console.error(`Failed to process file ${file.originalname}: `, error);
+              }
             }
-        const data = await uploadMediaQuery(files_data)
-        response.push(data)
-        }
-
             // _id: data._id,
         //     file_type: data.file_type,
         //     file_name: data.file_name,

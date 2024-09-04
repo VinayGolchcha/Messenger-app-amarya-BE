@@ -50,7 +50,7 @@ export const findMessageQuery = async (senders_id, recievers_id, search_text) =>
                     media_id: 1,
                     'media.file_type': 1,
                     'media.file_name': 1,
-                    'media.file_data': 1,
+                    'media.download_link': 1,
                     time: {
                         $dateToString: {
                             format: "%H:%M",
@@ -114,7 +114,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                                 $project: {
                                     file_type: 1,
                                     file_name: 1,
-                                    file_data: 1
+                                    download_link: 1
                                 }
                             }
                         ],
@@ -242,7 +242,7 @@ export const fetchNewMessagesForUserQuery = async(user_id) => {
             // reciever_deleted: false 
         })
         .select('senders_id recievers_id content message_type is_read media_id sent_at')
-        .populate('media_id', 'file_type file_name file_data');
+        .populate('media_id', 'file_type file_name download_link');
     } catch (error) {
         console.error('Error finding fetchNewMessagesForUserQuery details:', error);
         throw error;
@@ -409,7 +409,7 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
                             media_details: {
                                 file_type: "$media.file_type",
                                 file_name: "$media.file_name",
-                                file_data: "$media.file_data"
+                                download_link: "$media.download_link"
                             },
                             time: "$sent_at"
                         }
@@ -501,7 +501,7 @@ export const fetchConversationListQuery = async(user_id) => {
                             media_details: {
                                 file_type: "$media.file_type",
                                 file_name: "$media.file_name",
-                                file_data: "$media.file_data"
+                                download_link: "$media.download_link"
                             },
                             sent_at: "$sent_at",
                             time: {
@@ -585,7 +585,7 @@ export const fetchRemainingConversationListQuery = async(user_id) => {
                             media_details: {
                                 file_type: "$media_details.file_type",
                                 file_name: "$media_details.file_name",
-                                file_data: "$media_details.file_data"
+                                download_link: "$media_details.download_link"
                             },
                             sent_at: "$sent_at",
                             time: {

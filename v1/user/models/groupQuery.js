@@ -83,7 +83,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                                 $project: {
                                     file_type: 1,
                                     file_name: 1,
-                                    file_data: 1
+                                    download_link: 1
                                 }
                             }
                         ],
@@ -249,7 +249,7 @@ export const findMessageinGroupQuery = async(search_text, group_id) => {
             group_id: group_id 
           })
           .select('_id content message_type senders_id media_id')
-          .populate('media_id', 'file_type file_name file_data');
+          .populate('media_id', 'file_type file_name download_link');
     } catch (error) {
         console.error('Error finding findMessageinGroupQuery details:', error);
         throw error;
@@ -322,7 +322,7 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                             media_details: {
                                 file_type: "$media.file_type",
                                 file_name: "$media.file_name",
-                                file_data: "$media.file_data"
+                                download_link: "$media.download_link"
                             },
                             time: {
                                 $dateToString: {
