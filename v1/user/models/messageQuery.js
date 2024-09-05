@@ -444,7 +444,7 @@ export const fetchConversationListQuery = async(user_id) => {
             },
             {
                 $match: {
-                    sender_deleted: { $ne: true }
+                    reciever_deleted: { $ne: true }
                 }
             },
             {
@@ -484,7 +484,7 @@ export const fetchConversationListQuery = async(user_id) => {
                 $unwind: '$receiver'
             },
             {
-                $sort: { sent_at: -1 }
+                $sort: { updatedAt: -1 }
             },
             {
                 $group: {

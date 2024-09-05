@@ -302,7 +302,7 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                 $unwind: '$sender'
             },
             {
-                $sort: { sent_at: -1 }
+                $sort: { updatedAt: -1 }
             },
             {
                 $group: {
