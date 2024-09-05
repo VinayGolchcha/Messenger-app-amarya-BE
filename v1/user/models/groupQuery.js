@@ -209,6 +209,7 @@ export const fetchGroupsDataForUserQuery = async(user_id) => {
                     media_details : null,
                     time : null,
                     date : null,
+                    sent_at: null, 
                 }
             },
             {
@@ -332,6 +333,7 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                                 }
                             },
                             date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } },
+                            sent_at: "$sent_at" 
                         }
                     },
                     new_messages_count: {
@@ -358,6 +360,7 @@ export const fetchGroupConversationListQuery = async(user_id) => {
                     media_details : "$message.media_details",
                     time : "$message.time",
                     date : "$message.date",
+                    sent_at: "$message.sent_at",
                     new_messages_count: 1,
                     _id: 0
                 }
