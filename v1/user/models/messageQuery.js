@@ -484,7 +484,7 @@ export const fetchConversationListQuery = async(user_id) => {
                 $unwind: '$receiver'
             },
             {
-                $sort: { updatedAt: -1 }
+                $sort: { createdAt: -1 }
             },
             {
                 $group: {
