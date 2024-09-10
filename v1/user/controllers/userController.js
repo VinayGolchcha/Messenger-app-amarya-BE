@@ -385,7 +385,18 @@ export const fetchConversationsList = async (req, res) => {
         const final_data = await fetchRemainingConversationListQuery(user_id)
         const merged_array = [...private_data, ...final_data];
         const sorted_array = merged_array.sort((a, b) => b.sent_at - a.sent_at);
-        return successResponse(res, sorted_array, `Data fetched successfully!`);
+
+        const latest_messages_map = new Map();
+
+        sorted_array.forEach(message => {
+            const key = message.senders_id.toString();
+            if (!latest_messages_map.has(key) || latest_messages_map.get(key).sent_at < message.sent_at) {
+                latest_messages_map.set(key, message);
+            }
+        });
+
+        const unique_messages = Array.from(latest_messages_map.values());
+        return successResponse(res, unique_messages, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)

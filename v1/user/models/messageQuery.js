@@ -434,31 +434,16 @@ export const fetchNewMessagesForNotificationQuery = async(user_id) => {
     }
 }
 
-export const fetchConversationListQuery = async(user_id) => {
+export const fetchConversationListQuery = async (user_id) => {
     try {
         const pipeline = [
             {
-                $match: { 
-                    recievers_id: user_id
-                }
-            },
-            {
                 $match: {
+                    $or: [
+                        { recievers_id: user_id },
+                        { senders_id: user_id }
+                    ],
                     reciever_deleted: { $ne: true }
-                }
-            },
-            {
-                $lookup: {
-                    from: 'media',
-                    localField: 'media_id',
-                    foreignField: '_id',
-                    as: 'media'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$media',
-                    preserveNullAndEmptyArrays: true
                 }
             },
             {
@@ -470,7 +455,10 @@ export const fetchConversationListQuery = async(user_id) => {
                 }
             },
             {
-                $unwind: '$sender'
+                $unwind: {
+                    path: '$sender',
+                    preserveNullAndEmptyArrays: true
+                }
             },
             {
                 $lookup: {
@@ -481,70 +469,88 @@ export const fetchConversationListQuery = async(user_id) => {
                 }
             },
             {
-                $unwind: '$receiver'
-            },
-            {
-                $sort: { createdAt: -1 }
-            },
-            {
-                $group: {
-                    _id: "$senders_id",
-                    sender_name: { $first: "$sender.username" },
-                    socket_id: { $first: "$sender.socket_id" },
-                    reciever_username: { $first: "$receiver.username" },
-                    messages: {
-                        $first: {
-                            content: "$content",
-                            message_type: "$message_type",
-                            is_read: "$is_read",
-                            media_id: "$media_id",
-                            media_details: {
-                                file_type: "$media.file_type",
-                                file_name: "$media.file_name",
-                                download_link: "$media.download_link"
-                            },
-                            sent_at: "$sent_at",
-                            time: {
-                                $dateToString: {
-                                    format: "%H:%M",
-                                    date: "$sent_at",
-                                    timezone: "+05:30"
-                                }
-                            },
-                            date: { $dateToString: { format: "%Y-%m-%d", date: "$sent_at" } }
-                        }
-                    },
-                    new_messages_count: {
-                        $sum: {
-                            $cond: [{ $eq: ["$is_new", true] }, 1, 0]
-                        }
-                    },
-                    last_message_time: { $first: "$sent_at" }
+                $unwind: {
+                    path: '$receiver',
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
-                $sort: { last_message_time: -1 }
+                $sort: { sent_at: -1 }
+            },
+            {
+                $group: {
+                    _id: {
+                        sender: "$senders_id",
+                        receiver: "$recievers_id"
+                    },
+                    last_message: { $first: "$$ROOT" },
+                    new_messages_count: {
+                        $sum: {
+                            $cond: [
+                                { 
+                                    $and: [
+                                        { $eq: ["$is_new", true] },
+                                        { $eq: ["$recievers_id", user_id] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { "last_message.sent_at": -1 }
             },
             {
                 $project: {
-                    senders_id: "$_id",
+                    senders_id:  {
+                        $cond: {
+                        if: { $eq: ["$_id.sender", user_id] },
+                        then: "$_id.receiver",
+                        else: "$_id.sender"
+                    }},
                     sender_name: {
                         $cond: {
-                            if: { $eq: ["$_id", user_id] },
-                            then: "You",
-                            else: "$sender_name"
+                            if: { $ne: ["$_id.sender", user_id] },
+                            then: "$last_message.sender.username",
+                            else: {
+                                $cond: {
+                                    if: { $and: [{ $eq: ["$senders_id", user_id] }, { $eq: ["$recievers_id", user_id] }] },
+                                    then: "You",
+                                    else: "$last_message.receiver.username"
+                                }
+                            }
                         }
                     },
-                    socket_id: 1,
-                    reciever_username: 1, 
-                    content : "$messages.content",
-                    message_type : "$messages.message_type",
-                    is_read : "$messages.is_read",
-                    media_id : "$messages.media_id",
-                    media_details : "$messages.media_details",
-                    time : "$messages.time",
-                    date : "$messages.date",
-                    sent_at : "$messages.sent_at",
+                    socket_id: "$last_message.sender.socket_id",
+                    reciever_username: {
+                        $cond: {
+                            if: { $eq: ["$_id.sender", user_id] },
+                            then: "$last_message.sender.username",
+                            else: "$last_message.receiver.username"
+                        }
+                    }, 
+                    content: "$last_message.content",
+                    message_type: "$last_message.message_type",
+                    is_read: "$last_message.is_read",
+                    media_id: "$last_message.media_id",
+                    media_details: "$last_message.media",
+                    time: {
+                        $dateToString: {
+                            format: "%H:%M",
+                            date: "$last_message.sent_at",
+                            timezone: "+05:30"
+                        }
+                    },
+                    date: {
+                        $dateToString: {
+                            format: "%Y-%m-%d",
+                            date: "$last_message.sent_at"
+                        }
+                    },
+                    sent_at: "$last_message.sent_at",
                     new_messages_count: 1,
                     _id: 0
                 }

@@ -207,7 +207,7 @@ export const fetchGroupsDataForUserQuery = async(user_id) => {
                     is_read : null,
                     media_id :null,
                     media_details : null,
-                    time : null,
+                    time : '00:00',
                     date : null,
                     sent_at: null, 
                 }
