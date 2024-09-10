@@ -133,6 +133,11 @@ export const uploadFiles = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
 
         for (let file of files){
+            const max_size = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > max_size) {
+                return errorResponse(res, `File ${file.originalname} exceeds the 10MB limit.`, "");
+            }
+
             try {
                 const download_link = await generateDownloadLink(file.buffer, file_type, file.originalname);
                 const file_data = {
@@ -148,12 +153,6 @@ export const uploadFiles = async (req, res) => {
                 console.error(`Failed to process file ${file.originalname}: `, error);
               }
             }
-            // _id: data._id,
-        //     file_type: data.file_type,
-        //     file_name: data.file_name,
-        //     uploaded_by:data.uploaded_by,
-        //     uploaded_at:data.uploaded_at,
-        // }
         return successResponse(res, response, `File uploaded successfully!`);
     } catch (error) {
         console.error(error);

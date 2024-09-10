@@ -528,7 +528,13 @@ export const fetchConversationListQuery = async(user_id) => {
             {
                 $project: {
                     senders_id: "$_id",
-                    sender_name: 1,
+                    sender_name: {
+                        $cond: {
+                            if: { $eq: ["$_id", user_id] },
+                            then: "You",
+                            else: "$sender_name"
+                        }
+                    },
                     socket_id: 1,
                     reciever_username: 1, 
                     content : "$messages.content",
@@ -663,8 +669,13 @@ export const fetchRemainingConversationListQuery = async(user_id) => {
                 $project: {
                     _id: 0,
                     senders_id: "$receiver._id",
-                    sender_name: "$receiver.username",
-                    // reciever_username: "$sender.username",
+                    sender_name: {
+                        $cond: {
+                            if: { $eq: ["$_id", user_id] },
+                            then: "You",
+                            else: "$receiver.username"
+                        }
+                    },
                     socket_id: "$receiver.socket_id",
                     content : "$messages.content",
                     message_type : "$messages.message_type",

@@ -131,7 +131,20 @@ export const fetchGroupDataForUser = async (req, res) => {
               map.set(obj.group_id.toString(), obj);
             });
         
-            const mergedArray = Array.from(map.values());
+            // const mergedArray = Array.from(map.values());
+            const mergedArray = Array.from(map.values()).sort((a, b) => {
+                const hasMessageA = a.content !== null;
+                const hasMessageB = b.content !== null;
+            
+                if (hasMessageA && !hasMessageB) return -1;
+                if (!hasMessageA && hasMessageB) return 1;
+            
+                if (hasMessageA && hasMessageB) {
+                  return new Date(b.sent_at) - new Date(a.sent_at);
+                }
+           
+                return 0;
+              });
             return mergedArray;
           };
           const merged_array = mergeArrays(group_data, data);
