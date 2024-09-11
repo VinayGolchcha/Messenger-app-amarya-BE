@@ -257,7 +257,21 @@ export const socketConnection = async(server)=>{
                     socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
                     socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                     socket.to(callee_data.socket_id).emit("preInitiateCall", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
-                }else{
+                
+                    const callTimeout = setTimeout(async () => {
+                      await updateMissedCallStatusQuery(call._id);
+                      socket.emit("initiateMissed", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The call was missed.`));
+                    }, 60000);
+
+                    socket.on("endCall", ({ call_id }) => {
+                      clearTimeout(callTimeout);
+                      socket.emit("endCall", { call_id });
+                    });
+        
+                    socket.on("calleePickedUp", () => {
+                        clearTimeout(callTimeout);
+                    });
+                  }else{
                   await updateMissedCallStatusQuery(call._id)
                   socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
                 }
@@ -320,7 +334,7 @@ export const socketConnection = async(server)=>{
             const call = await findCallById(call_id);
 
             if(call.start_time == null){
-              await updateCallEndQuery(call_id, end_time, 0);
+              await updateCallStatusQuery(call_id, 'canceled')
               const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
               socket.emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
               socket.to(caller_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
