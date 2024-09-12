@@ -261,6 +261,7 @@ export const socketConnection = async(server)=>{
                     const callTimeout = setTimeout(async () => {
                       await updateMissedCallStatusQuery(call._id);
                       socket.emit("initiateMissed", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The call was missed.`));
+                      socket.to(callee_data.socket_id).emit("initiateMissed", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The call was missed.`));
                     }, 60000);
 
                     socket.on("endCall", ({ call_id }) => {
