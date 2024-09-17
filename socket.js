@@ -127,7 +127,7 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("markAsRead", async ({ message_id, user_id }) => {
-          if (!message || !user_id) {
+          if (!message_id || !user_id) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
@@ -136,7 +136,7 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("markAsReadStatus", async ({ message_id }) => {
-          if (!message ) {
+          if (!message_id ) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
