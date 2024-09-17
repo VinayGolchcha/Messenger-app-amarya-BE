@@ -83,6 +83,10 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("replyMessage", async({ message, sender_id, reciever_id, message_type, media_id, replied_message_id }) => {
+          if (!message || !sender_id || !reciever_id || !message_type || !replied_message_id) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
@@ -123,11 +127,19 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("markAsRead", async ({ message_id, user_id }) => {
+          if (!message || !user_id) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           await Promise.all([markAsReadQuery(message_id),
             updateReadByStatusQuery(message_id, user_id)])
         });
 
         socket.on("markAsReadStatus", async ({ message_id }) => {
+          if (!message ) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const [data, group_data] = await Promise.all([markAsReadQuery(message_id), getIsReadStatusQuery(message_id)])
 
           if(data != null){
@@ -138,6 +150,10 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("muteUnmuteNotifications", async ({ recievers_id, mute_status, group_id }) => {
+          if (!mute_status) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const user = await findUserDetailQuery(socket.id)
           recievers_id && recievers_id.trim() !== '' ? 
             await updateNotificationStatusQuery(user._id, recievers_id, mute_status) : ''
@@ -146,6 +162,10 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id}) => {
+          if (!message || !sender_id || !group_name || !message_type) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
@@ -178,6 +198,10 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('groupReplyMessage', async({group_name, sender_id, message, message_type, media_id, replied_message_id}) => {
+          if (!message || !sender_id || !group_name || !message_type || !replied_message_id) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
@@ -214,25 +238,29 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('enterGroup', async ({ user_id, group_name }) => {
+          if (!user_id || !group_name) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const user = await findGroupDataQuery(user_id, group_name)
           if (user) {
             socket.join(user.group_name)
-            // socket.emit('message', buildMsg(user._id,user[0].username, `You have joined the ${user[0].group_name} chat room`))
-            // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('', user[0].username, `${user[0].username} has joined the room`))
             await markAllUnreadMessagesAsReadQuery(user_id, group_name)
           } else {
-            socket.emit('message', buildMsg(`You have not been able to join due to some error`))
+            socket.emit('error', { error: `You have not been able to join due to some error`})
           }
         });
 
         socket.on('leaveGroup', async ({ user_id, group_name }) => {
+          if (!user_id || !group_name) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const user = await findGroupDataQuery(user_id, group_name)
           if (user) {
             socket.leave(user.group_name)
-            // socket.emit('message', buildMsg(user[0]._id, user[0].username, `You have left the ${user[0].group_name} chat room`))
-            // socket.broadcast.to(user[0].group_name).emit('message', buildMsg('',user[0].username, `${user[0].username} has left the room`))
           } else {
-            socket.emit('message', buildMsg(`You have not been able to leave due to some error`))
+            socket.emit('error', { error:`You have not been able to leave due to some error`})
           }
         })
 
