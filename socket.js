@@ -42,6 +42,10 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("privateMessage", async({ message, sender_id, reciever_id, message_type, media_id }) => {
+          if (!message || !sender_id || !reciever_id || !message_type) {
+            socket.emit("error", { error: "Missing required fields in payload" });
+            return;
+          }
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
