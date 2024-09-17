@@ -515,7 +515,7 @@ export const fetchConversationListQuery = async (user_id) => {
                         $cond: {
                             if: { $and: [{ $eq: ["$_id.sender", user_id] }, { $eq: ["$_id.receiver", user_id] }] },
                             then: {
-                                $concat: ["$last_message.receiver.username", "(You)"]
+                                $concat: [ "You", "(", "$last_message.receiver.username", ")"]
                             }, 
                             else: {
                                 $cond: {
