@@ -52,7 +52,7 @@ export const socketConnection = async(server)=>{
             message_type: message_type,
             content: message,
             sent_at: utcTime,
-            media_id: media_id ? media_id : null 
+            media_id: media_id ? media_id : null
           }
           const data = await addMessageQuery(message_data)
 
@@ -118,10 +118,9 @@ export const socketConnection = async(server)=>{
           }
         });
 
-        socket.on("markAsRead", async ({ message_id }) => {
-          const user = await findUserDetailQuery(socket.id)
+        socket.on("markAsRead", async ({ message_id, user_id }) => {
           await Promise.all([markAsReadQuery(message_id),
-            updateReadByStatusQuery(message_id, user._id)])
+            updateReadByStatusQuery(message_id, user_id)])
         });
 
         socket.on("markAsReadStatus", async ({ message_id }) => {
