@@ -4,9 +4,9 @@ const router = Router();
 
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
-import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, searchInMessages, fetchChatHistory, fetchNewMessages, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
+import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, fetchChatHistory, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
 import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail, exitGroup} from '../controllers/groupController.js';
-import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, searchInChatVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal, exitGrpVal } from '../../../utils/validation.js';
+import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal, exitGrpVal } from '../../../utils/validation.js';
 import { fetchCallLogs} from '../controllers/voiceController.js';
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -31,9 +31,9 @@ app.get('/fetch-conversations/:user_id', fetchConversationsList);
 app.post('/upload-file', upload.array('files', 5), authenticateToken, uploadFileVal, uploadFiles);
 app.get('/fetch-all-contacts/:user_id', authenticateToken, fetchAllContacts);
 app.post('/search-in-contacts/:user_id', authenticateToken, searchVal,  searchInContacts);
-app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMessages);
+// app.post('/search-in-messages', authenticateToken, searchInChatVal, searchInMessages);
 app.post('/fetch-chat-history', authenticateToken, fetchChatVal, fetchChatHistory);
-app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
+// app.get('/fetch-new-messages/:user_id', authenticateToken, newMessageVal, fetchNewMessages);
 app.post('/delete-message', authenticateToken, deleteChatVal, deleteMessages);
 
 //voice call api

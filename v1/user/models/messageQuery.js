@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import {MessageModel} from './messageModel.js';
 import {ReplyMessageModel} from './replyMessageModel.js'
+const encryptionKey = process.env.ENCRYPTION_KEY; 
 
 export const addMessageQuery = async (message_data) => {
     try{
@@ -15,14 +16,13 @@ export const markAsReadQuery = async (id) => {
     return await MessageModel.findByIdAndUpdate(id, { is_read: true, is_new: false });
 }
 
-export const findMessageQuery = async (senders_id, recievers_id, search_text) => {
+export const findMessageQuery = async (senders_id, recievers_id) => {
     try {
         const pipeline = [
             {
                 $match: {
                     senders_id: senders_id,
                     recievers_id: recievers_id,
-                    content: { $regex: search_text, $options: 'i' },
                     sender_deleted: false
                 }
             },
@@ -257,7 +257,7 @@ export const checkUserForGivenMessageQuery = async(user_id, message_id) => {
                 { recievers_id: user_id },
                 { senders_id: user_id }
             ]
-        }).select('senders_id recievers_id content message_type is_read media_id sent_at');
+        }).select('senders_id recievers_id message_type is_read media_id sent_at');
     } catch (error) {
         console.error('Error finding checkUserForGivenMessageQuery details:', error);
         throw error;

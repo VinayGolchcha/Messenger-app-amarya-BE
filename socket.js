@@ -10,6 +10,8 @@ import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetai
 import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery, updateMissedCallStatusQuery} from "./v1/user/models/voiceQuery.js";
 import { fetchMediaDetailsQuery } from "./v1/user/models/mediaQuery.js";
+import { decryptMessages, encryptMessage } from "./v1/helpers/encryption.js";
+
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
       cors: {
@@ -50,11 +52,12 @@ export const socketConnection = async(server)=>{
           const utcTime = istTime.utc().toDate();
           const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
           const recipient_socket = io.sockets.sockets.get(reciever_data.socket_id);
+          const encrypted_content = encryptMessage(message);
           const message_data = {
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
             message_type: message_type,
-            content: message,
+            content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null
           }
@@ -91,18 +94,22 @@ export const socketConnection = async(server)=>{
           const utcTime = istTime.utc().toDate();
           const [sender_data, reciever_data] = await Promise.all([userDataQuery(sender_id), userDataQuery(reciever_id)]);
           const recipient_socket = io.sockets.sockets.get(reciever_data.socket_id);
+          const encrypted_content = encryptMessage(message);
           const message_data = {
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
             message_type: message_type,
-            content: message,
+            content: encrypted_content,
             sent_at: utcTime,
-            media_id: media_id ? media_id : null 
+            media_id: media_id ? media_id : null
           }
           const data = await addMessageQuery(message_data)
 
           const reply_message = await addRepliedMessageDetailQuery(replied_message_id, data._id)
           const reply_message_data = await repliedMessageDetailQuery(reply_message.replied_message_id)
+          console.log(reply_message_data)
+          reply_message_data = decryptMessages(reply_message_data);
+          console.log(reply_message_data)
 
           if (recipient_socket){
             if(media_id){
@@ -169,11 +176,12 @@ export const socketConnection = async(server)=>{
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
+          const encrypted_content = encryptMessage(message);
           const message_data = {
             group_id: group_id._id,
             senders_id: user._id,
             message_type: message_type,
-            content: message,
+            content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null
           }
@@ -205,11 +213,12 @@ export const socketConnection = async(server)=>{
           const istTime = moment.tz('Asia/Kolkata');
           const utcTime = istTime.utc().toDate();
           const [user, group_id] = await Promise.all([userDataQuery(sender_id), getGroupDataQuery(group_name)])
+          const encrypted_content = encryptMessage(message);
           const message_data = {
             group_id: group_id._id,
             senders_id: user._id,
             message_type: message_type,
-            content: message,
+            content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null 
           }

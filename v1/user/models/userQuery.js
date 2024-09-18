@@ -6,7 +6,7 @@ export const create = async (user_data) => {
 }
 
 export const userDetailQuery = async (email) => {
-    return await UserModel.findOne({ 'email': email, 'is_registered': true })
+    return await UserModel.findOne({ 'email': email, 'is_registered': true }).select('_id username email socket_id is_email_verified password')
     .lean();
 }
 

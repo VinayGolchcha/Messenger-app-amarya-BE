@@ -11,6 +11,7 @@ import {fetchChatHistoryQuery, findMessageQuery, fetchNewMessagesForUserQuery, c
     fetchRemainingConversationListQuery} from "../models/messageQuery.js";
 import { checkIfUserIsAdminQuery, deleteGroupChatCompleteQuery, deleteGroupMessageByIdQuery, fetchGroupConversationListQuery, findGroupByNameQuery, updateDeleteUserStatusForGroupQuery } from "../models/groupQuery.js";
 import {generateDownloadLink} from '../../helpers/mediaDownloadableLink.js'
+import { decryptMessages, encryptMessage } from "../../helpers/encryption.js";
 dotenv.config();
 
 export const userInput = async (req, res) => {
@@ -103,14 +104,14 @@ export const userLogout = async (req, res) => {
     try {
         const user_id = req.params.id;
         await insertTokenQuery("", user_id);
-        // if(user_id){
-        //     res.clearCookie('token', {
-        //         httpOnly: false,
-        //         sameSite: 'None',
-        //         secure: true,
-        //         path: '/',
-        //       });
-        // }
+        if(user_id){
+            res.clearCookie('token', {
+                httpOnly: false,
+                sameSite: 'None',
+                secure: true,
+                path: '/',
+              });
+        }
         return successResponse(res, '', `You have successfully logged out!`);
     } catch (error) {
         console.error(error);
@@ -198,25 +199,26 @@ export const searchInContacts = async (req, res) => {
     }
 }
 
-export const searchInMessages = async (req, res) => {
-    try {
-        const errors = validationResult(req);
+// export const searchInMessages = async (req, res) => {
+//     try {
+//         const errors = validationResult(req);
 
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
-        }
+//         if (!errors.isEmpty()) {
+//             return errorResponse(res, errors.array(), "")
+//         }
 
-        let {user_id, recievers_id, search_text} = req.body;
-        user_id = new mongoose.Types.ObjectId(user_id)
-        recievers_id = new mongoose.Types.ObjectId(recievers_id)
-        search_text = search_text.toLowerCase();
-        const data = await findMessageQuery(user_id, recievers_id, search_text);
-        return successResponse(res, data, `Messages fetched successfully!`);
-    } catch (error) {
-        console.error(error);
-        return internalServerErrorResponse(res, error)
-    }
-}
+//         let {user_id, recievers_id, search_text} = req.body;
+//         user_id = new mongoose.Types.ObjectId(user_id)
+//         recievers_id = new mongoose.Types.ObjectId(recievers_id)
+//         search_text = search_text.toLowerCase();
+//         const data = await findMessageQuery(user_id, recievers_id);
+//         const decrypted_messages = decryptMessages(data);
+//         return successResponse(res, data, `Messages fetched successfully!`);
+//     } catch (error) {
+//         console.error(error);
+//         return internalServerErrorResponse(res, error)
+//     }
+// }
 
 export const fetchChatHistory = async (req, res) => {
     try {
@@ -230,33 +232,34 @@ export const fetchChatHistory = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id)
         recievers_id = new mongoose.Types.ObjectId(recievers_id)
         const data = await fetchChatHistoryQuery(user_id, recievers_id, skip, limit);
-        if (data.length == 0){
-            return successResponse(res, data, `No chats found in the given date range`)
+        const decrypted_messages = decryptMessages(data);
+        if (decrypted_messages.length == 0){
+            return successResponse(res, decrypted_messages, `No chats found in the given date range`)
         }
-        return successResponse(res, data, `Messages fetched successfully!`);
+        return successResponse(res, decrypted_messages, `Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
     }
 }
 
-export const fetchNewMessages = async (req, res) => {
-    try {
-        const errors = validationResult(req);
+// export const fetchNewMessages = async (req, res) => {
+//     try {
+//         const errors = validationResult(req);
 
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
-        }
+//         if (!errors.isEmpty()) {
+//             return errorResponse(res, errors.array(), "")
+//         }
 
-        let user_id = req.params.user_id;
-        user_id = new mongoose.Types.ObjectId(user_id)
-        const data = await fetchNewMessagesForUserQuery(user_id);
-        return successResponse(res, data, `Messages fetched successfully!`);
-    } catch (error) {
-        console.error(error);
-        return internalServerErrorResponse(res, error)
-    }
-}
+//         let user_id = req.params.user_id;
+//         user_id = new mongoose.Types.ObjectId(user_id)
+//         const data = await fetchNewMessagesForUserQuery(user_id);
+//         return successResponse(res, data, `Messages fetched successfully!`);
+//     } catch (error) {
+//         console.error(error);
+//         return internalServerErrorResponse(res, error)
+//     }
+// }
 
 export const deleteMessages = async (req, res) => {
     try {
@@ -396,12 +399,14 @@ export const fetchConversationsList = async (req, res) => {
         });
 
         const unique_messages = Array.from(latest_messages_map.values());
-        return successResponse(res, unique_messages, `Data fetched successfully!`);
+        const decrypted_messages = decryptMessages(unique_messages);
+        return successResponse(res, decrypted_messages, `Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
     }
 }
+
 export const fetchUserProfile = async (req, res) => {
     try {
         const errors = validationResult(req);
