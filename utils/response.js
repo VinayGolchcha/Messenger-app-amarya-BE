@@ -10,6 +10,10 @@ export const unAuthorizedResponse = (res, data, message = 'Unauthorized Response
     return res.status(statusCode).json({ success: false, message, data });
 };
 
+export const noAccessResponse = (res, data, message = 'No Access Response', statusCode = 403) => {
+    return res.status(statusCode).json({ success: false, message, data });
+};
+
 export const errorResponse = (res, errors, message = 'Error Occured', statusCode = 400) => {
     return res.status(statusCode).json({ success: false, message, errors });
 };
