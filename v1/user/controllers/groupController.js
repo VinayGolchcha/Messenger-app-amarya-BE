@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { successResponse, errorResponse, notFoundResponse, unAuthorizedResponse, internalServerErrorResponse } from "../../../utils/response.js"
 import {createGroupQuery, groupDetailQuery, checkGroupNameExistsQuery, fetchGroupChatHistoryQuery, fetchGroupsDataForUserQuery, checkUserAsAdminForGroupQuery, updateGroupQuery, findMessageinGroupQuery,fetchGroupDetailQuery, fetchGroupConversationListQuery, exitGroupQuery, exitReadByArrayQuery, getGroupMembersAndDetailsQuery, deleteGroupByIdQuery} from "../models/groupQuery.js"
 import { userDetailQuery, userDataQuery} from "../models/userQuery.js"
+import { decryptMessages } from "../../helpers/encryption.js";
 
 dotenv.config();
 
@@ -97,11 +98,11 @@ export const fetchGroupChatHistory = async (req, res) => {
         user_id = new mongoose.Types.ObjectId(user_id);
         group_id = new mongoose.Types.ObjectId(group_id);
         const data = await fetchGroupChatHistoryQuery(group_id, user_id, skip, limit);
-
-        if(data.length == 0){
-            return successResponse(res, data, `No chats found in the given date range`);
-        };
-        return successResponse(res, data, `Group Messages fetched successfully!`);
+        const decrypted_messages = decryptMessages(data);
+        if (decrypted_messages.length == 0){
+            return successResponse(res, decrypted_messages, `No chats found`)
+        }
+        return successResponse(res, decrypted_messages, `Group Messages fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
@@ -148,32 +149,36 @@ export const fetchGroupDataForUser = async (req, res) => {
             return mergedArray;
           };
           const merged_array = mergeArrays(group_data, data);
+          const decrypted_messages = decryptMessages(merged_array);
+            if (decrypted_messages.length == 0){
+                return successResponse(res, decrypted_messages, `No chats found`)
+            }
           
-        return successResponse(res, merged_array, `Group Data fetched successfully!`);
+        return successResponse(res, decrypted_messages, `Group Data fetched successfully!`);
     } catch (error) {
         console.error(error);
         return internalServerErrorResponse(res, error)
     }
 }
 
-export const searchMessageInGroup = async (req, res) => {
-    try {
-        const errors = validationResult(req);
+// export const searchMessageInGroup = async (req, res) => {
+//     try {
+//         const errors = validationResult(req);
 
-        if (!errors.isEmpty()) {
-            return errorResponse(res, errors.array(), "")
-        }
+//         if (!errors.isEmpty()) {
+//             return errorResponse(res, errors.array(), "")
+//         }
 
-        let {user_id, group_id, search_text} = req.body;
-        group_id = new mongoose.Types.ObjectId(group_id)
-        search_text = search_text.toLowerCase();
-        const data = await findMessageinGroupQuery(search_text, group_id);
-        return successResponse(res, data, `Messages fetched successfully!`);
-    } catch (error) {
-        console.error(error);
-        return internalServerErrorResponse(res, error)
-    }
-}
+//         let {user_id, group_id, search_text} = req.body;
+//         group_id = new mongoose.Types.ObjectId(group_id)
+//         search_text = search_text.toLowerCase();
+//         const data = await findMessageinGroupQuery(search_text, group_id);
+//         return successResponse(res, data, `Messages fetched successfully!`);
+//     } catch (error) {
+//         console.error(error);
+//         return internalServerErrorResponse(res, error)
+//     }
+// }
 
 export const fetchGroupDetail = async (req, res) => {
     try {

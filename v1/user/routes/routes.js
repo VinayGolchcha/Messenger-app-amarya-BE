@@ -5,7 +5,7 @@ const router = Router();
 import multer from 'multer';
 import {authenticateToken} from '../../../middlewares/auth.js';
 import {userLogin, userLogout, userInput, uploadFiles, fetchAllContacts, searchInContacts, fetchChatHistory, deleteMessages, fetchConversationsList,fetchUserProfile} from '../controllers/userController.js';
-import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, searchMessageInGroup, updateGroup,fetchGroupDetail, exitGroup} from '../controllers/groupController.js';
+import {createGroup, fetchGroupChatHistory, fetchGroupDataForUser, updateGroup,fetchGroupDetail, exitGroup} from '../controllers/groupController.js';
 import {fetchCallLogsVal,loginVal, createGroupVal, uploadFileVal, searchVal, fetchChatVal, newMessageVal, deleteChatVal, fetchGrpChatVal, updateGrpVal,fetchGroupDetailVal,fetchUserProfileVal, exitGrpVal } from '../../../utils/validation.js';
 import { fetchCallLogs} from '../controllers/voiceController.js';
 const storage = multer.memoryStorage();
@@ -23,7 +23,7 @@ app.post('/fetch-group-chat-history', authenticateToken, fetchGrpChatVal, fetchG
 app.get('/fetch-all-groups-data-for-user/:user_id', authenticateToken, newMessageVal, fetchGroupDataForUser);
 app.post('/update-group', authenticateToken, updateGrpVal, updateGroup);
 app.post('/exit-group', authenticateToken, exitGrpVal, exitGroup);
-app.post('/search-message-in-group', searchMessageInGroup);
+// app.post('/search-message-in-group', searchMessageInGroup);
 
 //user APIS
 app.get('/fetch-user-profile/:user_id', fetchUserProfileVal, fetchUserProfile);

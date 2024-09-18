@@ -106,10 +106,8 @@ export const socketConnection = async(server)=>{
           const data = await addMessageQuery(message_data)
 
           const reply_message = await addRepliedMessageDetailQuery(replied_message_id, data._id)
-          const reply_message_data = await repliedMessageDetailQuery(reply_message.replied_message_id)
-          console.log(reply_message_data)
+          let reply_message_data = await repliedMessageDetailQuery(reply_message.replied_message_id)
           reply_message_data = decryptMessages(reply_message_data);
-          console.log(reply_message_data)
 
           if (recipient_socket){
             if(media_id){
@@ -169,7 +167,7 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id}) => {
-          if (!message || !sender_id || !group_name || !message_type) {
+          if (!sender_id || !group_name || !message_type) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
@@ -206,7 +204,7 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('groupReplyMessage', async({group_name, sender_id, message, message_type, media_id, replied_message_id}) => {
-          if (!message || !sender_id || !group_name || !message_type || !replied_message_id) {
+          if (!sender_id || !group_name || !message_type || !replied_message_id) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
@@ -227,7 +225,8 @@ export const socketConnection = async(server)=>{
 
           const id = new mongoose.Types.ObjectId(group_id._id)
           const reply_message = await addRepliedGroupMessageDetailQuery(replied_message_id, message_cr._id)
-          const reply_message_data = await repliedGroupMessageDetailQuery(reply_message.replied_message_id)
+          let reply_message_data = await repliedGroupMessageDetailQuery(reply_message.replied_message_id)
+          reply_message_data = decryptMessages(reply_message_data);
 
           if(media_id){
             const media_detail = await fetchMediaDetailsQuery(media_id);

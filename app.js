@@ -68,7 +68,7 @@ try {
 } catch (error) {
   console.error("Socket connection failed:", error);
 }
-// monitorMessages()
+monitorMessages()
 runCronJobs()
 
 const port = process.env.PORT || 6060;
