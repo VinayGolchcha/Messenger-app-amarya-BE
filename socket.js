@@ -42,8 +42,13 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("privateMessage", async({ message, sender_id, reciever_id, message_type, media_id }) => {
-          if (!message || !sender_id || !reciever_id || !message_type) {
-            socket.emit("error", { error: "Missing required fields in payload" });
+          const missingFields = [];
+          if (!sender_id) missingFields.push('sender_id');
+          if (!reciever_id) missingFields.push('reciever_id');
+          if (!message_type) missingFields.push('message_type');
+      
+          if (missingFields.length > 0) {
+            socket.emit("error", { error: `Missing required fields: ${missingFields.join(', ')}` });
             return;
           }
           const istTime = moment.tz('Asia/Kolkata');
@@ -83,8 +88,14 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on("replyMessage", async({ message, sender_id, reciever_id, message_type, media_id, replied_message_id }) => {
-          if (!message || !sender_id || !reciever_id || !message_type || !replied_message_id) {
-            socket.emit("error", { error: "Missing required fields in payload" });
+          const missingFields = [];
+          if (!sender_id) missingFields.push('sender_id');
+          if (!reciever_id) missingFields.push('reciever_id');
+          if (!message_type) missingFields.push('message_type');
+          if (!replied_message_id) missingFields.push('replied_message_id');
+      
+          if (missingFields.length > 0) {
+            socket.emit("error", { error: `Missing required fields: ${missingFields.join(', ')}` });
             return;
           }
           const istTime = moment.tz('Asia/Kolkata');
