@@ -13,7 +13,7 @@ export const addMessageQuery = async (message_data) => {
 }
 
 export const markAsReadQuery = async (id) => {
-    return await MessageModel.findByIdAndUpdate(id, { is_read: true, is_new: false });
+    return await MessageModel.findByIdAndUpdate(id, { is_read: true, is_new: false }, { new: true });
 }
 
 export const findMessageQuery = async (senders_id, recievers_id) => {

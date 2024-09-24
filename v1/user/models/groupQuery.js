@@ -377,7 +377,7 @@ export const fetchGroupConversationListQuery = async(user_id) => {
 
 export const updateReadByStatusQuery = async(id, user_id) => {
     try {
-        return await GroupMessageModel.updateOne({_id: id}, { $addToSet: { read_by: user_id } });
+        return await GroupMessageModel.updateOne({_id: id}, { $addToSet: { read_by: user_id } }, {new: true});
     } catch (error) {
         console.error('Error finding updateReadByStatusQuery details:', error);
         throw error;

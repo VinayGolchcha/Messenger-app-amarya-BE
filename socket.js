@@ -68,6 +68,11 @@ export const socketConnection = async(server)=>{
           }
           const data = await addMessageQuery(message_data)
 
+          if (sender_id === reciever_id) {
+            const message_data = await markAsReadQuery(data._id)
+            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read));
+          }
+
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
@@ -120,6 +125,11 @@ export const socketConnection = async(server)=>{
           let reply_message_data = await repliedMessageDetailQuery(reply_message.replied_message_id)
           reply_message_data = decryptMessages(reply_message_data);
 
+          if (sender_id === reciever_id) {
+            const message_data = await markAsReadQuery(data._id)
+            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read));
+          }
+          
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
@@ -147,22 +157,15 @@ export const socketConnection = async(server)=>{
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
-          await Promise.all([markAsReadQuery(message_id),
+      
+          const [data, group_data] = await Promise.all([markAsReadQuery(message_id),
             updateReadByStatusQuery(message_id, user_id)])
-        });
-
-        socket.on("markAsReadStatus", async ({ message_id }) => {
-          if (!message_id ) {
-            socket.emit("error", { error: "Missing required fields in payload" });
-            return;
-          }
-          const [data, group_data] = await Promise.all([markAsReadQuery(message_id), getIsReadStatusQuery(message_id)])
-
-          if(data != null){
-            socket.emit("message", buildMsgExs(message_id, data.content, data.is_read));
-          }else if (group_data != null){
-          socket.emit("message", buildMsgExs(message_id, group_data.content, group_data.is_read));
-         }
+            const user_data = await userDataQuery(data.senders_id)
+            if(data != null){
+              socket.to(user_data.socket_id).emit("markAsReadStatus", buildMsgExs(message_id, data.is_read));
+            }else if (group_data != null){
+              socket.emit("markAsReadStatus", buildMsgExs(message_id, group_data.is_read));
+           }
         });
 
         socket.on("muteUnmuteNotifications", async ({ recievers_id, mute_status, group_id }) => {
@@ -472,10 +475,9 @@ function buildMsgWithMedia(id, username, text, message_id, media_id, file_type, 
   }
 }
 
-function buildMsgExs(message_id, content, is_read) {
+function buildMsgExs(message_id, is_read) {
   return {
       message_id,
-      content,
       is_read
   }
 }
