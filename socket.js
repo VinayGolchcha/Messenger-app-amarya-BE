@@ -129,7 +129,7 @@ export const socketConnection = async(server)=>{
             const message_data = await markAsReadQuery(data._id)
             socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read));
           }
-          
+
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
@@ -160,8 +160,8 @@ export const socketConnection = async(server)=>{
       
           const [data, group_data] = await Promise.all([markAsReadQuery(message_id),
             updateReadByStatusQuery(message_id, user_id)])
-            const user_data = await userDataQuery(data.senders_id)
             if(data != null){
+              const user_data = await userDataQuery(data.senders_id)
               socket.to(user_data.socket_id).emit("markAsReadStatus", buildMsgExs(message_id, data.is_read));
             }else if (group_data != null){
               socket.emit("markAsReadStatus", buildMsgExs(message_id, group_data.is_read));
