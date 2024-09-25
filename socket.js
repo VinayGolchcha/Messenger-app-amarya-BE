@@ -78,9 +78,13 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
+              socket.emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link ));
               socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link ));
+              socket.to(sender_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link ));
             }else{
+              socket.emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key));
               socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key));
+              socket.to(sender_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key));
             }
           }
 
@@ -137,8 +141,12 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
+              socket.emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name ));
               socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name ));
+              socket.to(sender_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name ));
             }else{
+              socket.emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key,  '' , '', '' , '', reply_message_data[0].content, reply_message_data[0].sender_name ));
+              socket.to(sender_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key,  '' , '', '' , '', reply_message_data[0].content, reply_message_data[0].sender_name ));
               socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, '' , '', '' , '',reply_message_data[0].content, reply_message_data[0].sender_name));
             }
           }
