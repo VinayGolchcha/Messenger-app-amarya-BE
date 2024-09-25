@@ -28,6 +28,9 @@ export const decryptMessages = (messages) => {
       if (message.content) {
         message.content = decryptMessage(message.content);
       }
+      if (message.replied_message.content){
+        message.replied_message.content = decryptMessage(message.replied_message.content);
+      }
       return message;
     });
 };
