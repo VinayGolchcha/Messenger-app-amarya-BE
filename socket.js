@@ -43,11 +43,12 @@ export const socketConnection = async(server)=>{
           console.log(event, args);
         });
 
-        socket.on("privateMessage", async({ message, sender_id, reciever_id, message_type, media_id }) => {
+        socket.on("privateMessage", async({ message, sender_id, reciever_id, message_type, media_id, unique_message_key }) => {
           const missingFields = [];
           if (!sender_id) missingFields.push('sender_id');
           if (!reciever_id) missingFields.push('reciever_id');
           if (!message_type) missingFields.push('message_type');
+          if (!unique_message_key) missingFields.push('unique_message_key');
       
           if (missingFields.length > 0) {
             socket.emit("error", { error: `Missing required fields: ${missingFields.join(', ')}` });
@@ -62,6 +63,7 @@ export const socketConnection = async(server)=>{
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
             message_type: message_type,
+            unique_message_key: unique_message_key,
             content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null
@@ -76,9 +78,9 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
-              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link ));
+              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link ));
             }else{
-              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id));
+              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key));
             }
           }
 
@@ -95,12 +97,13 @@ export const socketConnection = async(server)=>{
           }
         });
 
-        socket.on("replyMessage", async({ message, sender_id, reciever_id, message_type, media_id, replied_message_id }) => {
+        socket.on("replyMessage", async({ message, sender_id, reciever_id, message_type, media_id, replied_message_id, unique_message_key }) => {
           const missingFields = [];
           if (!sender_id) missingFields.push('sender_id');
           if (!reciever_id) missingFields.push('reciever_id');
           if (!message_type) missingFields.push('message_type');
           if (!replied_message_id) missingFields.push('replied_message_id');
+          if (!unique_message_key) missingFields.push('unique_message_key');
       
           if (missingFields.length > 0) {
             socket.emit("error", { error: `Missing required fields: ${missingFields.join(', ')}` });
@@ -115,6 +118,7 @@ export const socketConnection = async(server)=>{
             senders_id: sender_data._id,
             recievers_id: reciever_data._id,
             message_type: message_type,
+            unique_message_key: unique_message_key,
             content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null
@@ -133,9 +137,9 @@ export const socketConnection = async(server)=>{
           if (recipient_socket){
             if(media_id){
               const media_detail = await fetchMediaDetailsQuery(media_id);
-              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name ));
+              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name ));
             }else{
-              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, '' , '', '' , '',reply_message_data[0].content, reply_message_data[0].sender_name));
+              socket.to(reciever_data.socket_id).emit("message", buildMsgWithMedia(sender_data._id, sender_data.username, message, data._id, unique_message_key, '' , '', '' , '',reply_message_data[0].content, reply_message_data[0].sender_name));
             }
           }
 
@@ -162,9 +166,9 @@ export const socketConnection = async(server)=>{
             updateReadByStatusQuery(message_id, user_id)])
             if(data != null){
               const user_data = await userDataQuery(data.senders_id)
-              socket.to(user_data.socket_id).emit("markAsReadStatus", buildMsgExs(message_id, data.is_read));
+              socket.to(user_data.socket_id).emit("markAsReadStatus", buildMsgExs(message_id, data.is_read, data.unique_message_key));
             }else if (group_data != null){
-              socket.emit("markAsReadStatus", buildMsgExs(message_id, group_data.is_read));
+              socket.emit("markAsReadStatus", buildMsgExs(message_id, group_data.is_read, group_data.unique_message_key));
            }
         });
 
@@ -180,8 +184,8 @@ export const socketConnection = async(server)=>{
             await updateNotificationStatusForGroupQuery(user._id, group_id, mute_status) : ''
         });
 
-        socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id}) => {
-          if (!sender_id || !group_name || !message_type) {
+        socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id, unique_message_key}) => {
+          if (!sender_id || !group_name || !message_type || unique_message_key) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
@@ -193,6 +197,7 @@ export const socketConnection = async(server)=>{
             group_id: group_id._id,
             senders_id: user._id,
             message_type: message_type,
+            unique_message_key: unique_message_key,
             content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null
@@ -201,9 +206,9 @@ export const socketConnection = async(server)=>{
           await updateReadByStatusQuery(message_cr._id, user._id)
           if(media_id){
             const media_detail = await fetchMediaDetailsQuery(media_id);
-            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link,'' , '', group_id._id))
+            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link,'' , '', group_id._id))
           }else{
-            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id,'' , '','' , '','' , '', group_id._id))
+            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id, unique_message_key, '' , '','' , '','' , '', group_id._id))
           }
 
           const id = new mongoose.Types.ObjectId(group_id._id)
@@ -217,8 +222,8 @@ export const socketConnection = async(server)=>{
           }
         });
 
-        socket.on('groupReplyMessage', async({group_name, sender_id, message, message_type, media_id, replied_message_id}) => {
-          if (!sender_id || !group_name || !message_type || !replied_message_id) {
+        socket.on('groupReplyMessage', async({group_name, sender_id, message, message_type, media_id, replied_message_id, unique_message_key}) => {
+          if (!sender_id || !group_name || !message_type || !replied_message_id || !unique_message_key) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }
@@ -230,6 +235,7 @@ export const socketConnection = async(server)=>{
             group_id: group_id._id,
             senders_id: user._id,
             message_type: message_type,
+            unique_message_key: unique_message_key,
             content: encrypted_content,
             sent_at: utcTime,
             media_id: media_id ? media_id : null 
@@ -244,9 +250,9 @@ export const socketConnection = async(server)=>{
 
           if(media_id){
             const media_detail = await fetchMediaDetailsQuery(media_id);
-            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name, group_id._id))
+            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id, unique_message_key, media_id, media_detail.file_type, media_detail.file_name, media_detail.download_link, reply_message_data[0].content, reply_message_data[0].sender_name, group_id._id))
           }else{
-            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id,'' , '','' , '', reply_message_data[0].content, reply_message_data[0].sender_name, group_id._id))
+            socket.broadcast.to(group_name).emit('message', buildMsgWithMedia(user._id, user.username, message, message_cr._id,unique_message_key, '' , '','' , '', reply_message_data[0].content, reply_message_data[0].sender_name, group_id._id))
           }
          
           if (user.mute_notifications != null && user.mute_notifications.groups != null){
@@ -453,12 +459,13 @@ function buildMsg(id, username, text, message_id, reply_content, reply_sender, g
   }
 }
 
-function buildMsgWithMedia(id, username, text, message_id, media_id, file_type, file_name, download_link, reply_content, reply_sender, group_id) {
+function buildMsgWithMedia(id, username, text, message_id, unique_message_key, media_id, file_type, file_name, download_link, reply_content, reply_sender, group_id) {
   return {
       id,
       username,
       text,
       message_id,
+      unique_message_key,
       media_id,
       file_type,
       file_name,
@@ -475,10 +482,11 @@ function buildMsgWithMedia(id, username, text, message_id, media_id, file_type, 
   }
 }
 
-function buildMsgExs(message_id, is_read) {
+function buildMsgExs(message_id, is_read, unique_message_key) {
   return {
       message_id,
-      is_read
+      is_read,
+      unique_message_key
   }
 }
 

@@ -6,6 +6,7 @@ const MessageSchema = new mongoose.Schema({
     senders_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     recievers_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     message_type: { type: String, enum: ['text', 'image', 'audio', 'video', 'document'], required: true},
+    unique_message_key: { type: String, required: true },
     media_id : {type: [{type : mongoose.Schema.Types.ObjectId, ref: 'Media'}]},
     content: { type: String, default: null},
     is_read: { type: Boolean, default: false},
