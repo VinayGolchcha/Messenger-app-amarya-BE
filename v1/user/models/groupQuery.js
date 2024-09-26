@@ -108,7 +108,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                     $lookup: {
                         from: 'groupmessages',
                         localField: 'replied_message_info.replied_message_id',
-                        foreignField: '_id',
+                        foreignField: 'unique_message_key',
                         as: 'replied_message'
                     }
                 },

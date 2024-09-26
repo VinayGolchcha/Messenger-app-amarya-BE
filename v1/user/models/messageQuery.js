@@ -155,7 +155,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                     $lookup: {
                         from: 'messages',
                         localField: 'replied_message_info.replied_message_id',
-                        foreignField: '_id',
+                        foreignField: 'unique_message_key',
                         as: 'replied_message'
                     }
                 },
@@ -732,7 +732,7 @@ export const addEntryForDeleteChatQuery = async(id, senders_id, receivers_id) =>
 export const addRepliedMessageDetailQuery = async(id, message_id) => {
     try {
         const data = {
-            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_id: new mongoose.Types.ObjectId(message_id)
+            replied_message_id: id, message_replied_on_id: new mongoose.Types.ObjectId(message_id)
         }
             return await ReplyMessageModel.create(data);
     } catch (error) {
@@ -743,18 +743,18 @@ export const addRepliedMessageDetailQuery = async(id, message_id) => {
 
 export const repliedMessageDetailQuery = async(id) => {
     try {
-        let object_id = new mongoose.Types.ObjectId(id);
+        // let object_id = new mongoose.Types.ObjectId(id);
             const pipeline = [
                 {
                     $match: { 
-                        replied_message_id: object_id
+                        replied_message_id: id
                     }
                 },
                 {
                     $lookup: {
                         from: 'messages',
                         localField: 'replied_message_id',
-                        foreignField: '_id',
+                        foreignField: 'unique_message_key',
                         as: 'message'
                     }
                 },
@@ -798,7 +798,7 @@ export const repliedMessageDetailQuery = async(id) => {
 export const addRepliedGroupMessageDetailQuery = async(id, group_id) => {
     try {
         const data = {
-            replied_message_id: new mongoose.Types.ObjectId(id), message_replied_on_group_id: new mongoose.Types.ObjectId(group_id)
+            replied_message_id: id, message_replied_on_group_id: new mongoose.Types.ObjectId(group_id)
         }
             return await ReplyMessageModel.create(data);
     } catch (error) {
@@ -809,18 +809,18 @@ export const addRepliedGroupMessageDetailQuery = async(id, group_id) => {
 
 export const repliedGroupMessageDetailQuery = async(id) => {
     try {
-        let object_id = new mongoose.Types.ObjectId(id);
+        // let object_id = new mongoose.Types.ObjectId(id);
             const pipeline = [
                 {
                     $match: { 
-                        replied_message_id: object_id
+                        replied_message_id: id
                     }
                 },
                 {
                     $lookup: {
                         from: 'groupmessages',
                         localField: 'replied_message_id',
-                        foreignField: '_id',
+                        foreignField: 'unique_message_key',
                         as: 'message'
                     }
                 },
