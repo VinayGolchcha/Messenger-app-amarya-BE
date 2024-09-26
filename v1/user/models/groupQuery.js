@@ -143,6 +143,7 @@ export const fetchGroupChatHistoryQuery = async (group_id, sender_id, skip, limi
                         username: '$sender.username',
                         content: 1,
                         message_type: 1,
+                        unique_message_key: 1,
                         media: 1,
                         time: {
                             $dateToString: {

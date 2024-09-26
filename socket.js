@@ -72,7 +72,7 @@ export const socketConnection = async(server)=>{
 
           if (sender_id === reciever_id) {
             const message_data = await markAsReadQuery(data._id)
-            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read));
+            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read, message_data.unique_message_key));
           }
 
           if (recipient_socket){
@@ -131,7 +131,7 @@ export const socketConnection = async(server)=>{
 
           if (sender_id === reciever_id) {
             const message_data = await markAsReadQuery(data._id)
-            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read));
+            socket.emit("markAsReadStatus", buildMsgExs(message_data._id, message_data.is_read, message_data.unique_message_key));
           }
 
           if (recipient_socket){
@@ -185,7 +185,7 @@ export const socketConnection = async(server)=>{
         });
 
         socket.on('groupMessage', async({group_name, sender_id, message, message_type, media_id, unique_message_key}) => {
-          if (!sender_id || !group_name || !message_type || unique_message_key) {
+          if (!sender_id || !group_name || !message_type || !unique_message_key) {
             socket.emit("error", { error: "Missing required fields in payload" });
             return;
           }

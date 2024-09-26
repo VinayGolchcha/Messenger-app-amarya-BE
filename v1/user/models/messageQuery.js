@@ -191,6 +191,7 @@ export const fetchChatHistoryQuery = async (sender_id, reciever_id, skip, limit)
                         receiver_name: { $arrayElemAt: ['$receiver.username', 0] },
                         content: 1,
                         message_type: 1,
+                        unique_message_key: 1,
                         is_read: 1,
                         media: 1,
                         time: {
