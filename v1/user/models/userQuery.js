@@ -16,6 +16,15 @@ export const userDataQuery = async (id) => {
     .lean();
 }
 
+export const findUserAndUpdateInCallStatusQuery = async(id, status) => {
+    try {
+        return await UserModel.findOneAndUpdate({ _id: id, is_registered: true }, { $set: { "in_call_status": status } }, { safe: true, upsert: false, new: true });
+    } catch (error) {
+        console.error('Error finding findUserAndUpdateInCallStatusQuery details:', error);
+        throw error;
+    }
+}
+
 export const insertTokenQuery = async (token, id) => {
     return await UserModel.findOneAndUpdate({ _id: id, is_registered: true }, { $set: { "auth_token": token } }, { safe: true, upsert: false, new: true });
 }

@@ -4,7 +4,7 @@ import moment from 'moment-timezone';
 import {userDetailQuery, updateSocketId, userGroupDetailQuery, findUserDetailQuery, 
   updateNotificationStatusForGroupQuery, updateNotificationStatusQuery,
   addMuteDataQuery,
-  addGroupMuteDataQuery,
+  addGroupMuteDataQuery, findUserAndUpdateInCallStatusQuery,
   userDataQuery} from "./v1/user/models/userQuery.js"
 import {addEntryForDeleteChatQuery, addMessageQuery, addRepliedGroupMessageDetailQuery, addRepliedMessageDetailQuery, markAsReadQuery, repliedGroupMessageDetailQuery, repliedMessageDetailQuery} from "./v1/user/models/messageQuery.js"
 import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadStatusQuery, markAllUnreadMessagesAsReadQuery, updateReadByStatusQuery } from "./v1/user/models/groupQuery.js"
@@ -312,6 +312,11 @@ export const socketConnection = async(server)=>{
                 const [call, callee_data, caller_data] = await Promise.all([logCallQuery(call_data), userDataQuery(callee_id), userDataQuery(caller_id)]) 
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
                
+                if (callee_data.in_call_status == true){
+                    socket.emit("busyInCall", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `The person you are trying to reach is busy at the moment`));
+                    return;
+                  }
+
                 if (callee_socket) {
                     socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
                     socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
@@ -347,7 +352,7 @@ export const socketConnection = async(server)=>{
                 caller_id = new mongoose.Types.ObjectId(caller_id);
                 callee_id = new mongoose.Types.ObjectId(callee_id);
         
-                const [call, callee_data, caller_data] = await Promise.all([findCallById(call_id), userDataQuery(callee_id), userDataQuery(caller_id)]) 
+                const [call, callee_data, caller_data, callee_status, caller_status] = await Promise.all([findCallById(call_id), userDataQuery(callee_id), userDataQuery(caller_id), findUserAndUpdateInCallStatusQuery(callee_id, true), findUserAndUpdateInCallStatusQuery(caller_id, true)]) 
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
@@ -381,7 +386,7 @@ export const socketConnection = async(server)=>{
         socket.on("rejectCall", async ({ call_id, caller_id }) => {
             const call = await findCallById(call_id);
             await updateCallStatusQuery(call_id, 'rejected')
-            const [ callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(caller_id)]) 
+            const [ callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(caller_id, false)]) 
             socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `The person you are trying to reach, is currently unavailable!`));
         });
 
@@ -395,14 +400,14 @@ export const socketConnection = async(server)=>{
 
             if(call.start_time == null){
               await updateCallStatusQuery(call_id, 'canceled')
-              const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
+              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(call.caller_id, false)]) 
               socket.emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
               socket.to(caller_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
               socket.to(callee_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
             }else{
               const duration = (end_time - call.start_time) / 1000;
               await updateCallEndQuery(call_id, end_time, duration);
-              const [callee_socket, caller_socket] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id)]) 
+              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(call.caller_id, false)]) 
               socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
               socket.to(caller_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
               socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
