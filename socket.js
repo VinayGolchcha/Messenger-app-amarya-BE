@@ -318,12 +318,13 @@ export const socketConnection = async(server)=>{
                   }
 
                 if (callee_socket) {
+                    const [callee_status, caller_status] = await Promise.all([findUserAndUpdateInCallStatusQuery(callee_id, true), findUserAndUpdateInCallStatusQuery(caller_id, true)])
                     socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Call Initiated!`));
                     socket.to(callee_data.socket_id).emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                     socket.to(callee_data.socket_id).emit("preInitiateCall", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username,  `Incoming call!`));
                 
                     const callTimeout = setTimeout(async () => {
-                      await updateMissedCallStatusQuery(call._id);
+                      const [call_data, callee_status, caller_status] = await Promise.all([updateMissedCallStatusQuery(call._id), findUserAndUpdateInCallStatusQuery(callee_id, false), findUserAndUpdateInCallStatusQuery(caller_id, false)])
                       socket.emit("initiateMissed", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The call was missed.`));
                       socket.to(callee_data.socket_id).emit("initiateMissed", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The call was missed.`));
                     }, 60000);
@@ -352,7 +353,7 @@ export const socketConnection = async(server)=>{
                 caller_id = new mongoose.Types.ObjectId(caller_id);
                 callee_id = new mongoose.Types.ObjectId(callee_id);
         
-                const [call, callee_data, caller_data, callee_status, caller_status] = await Promise.all([findCallById(call_id), userDataQuery(callee_id), userDataQuery(caller_id), findUserAndUpdateInCallStatusQuery(callee_id, true), findUserAndUpdateInCallStatusQuery(caller_id, true)]) 
+                const [call, callee_data, caller_data] = await Promise.all([findCallById(call_id), userDataQuery(callee_id), userDataQuery(caller_id)]) 
                 const callee_socket = io.sockets.sockets.get(callee_data.socket_id);
         
                 if (callee_socket) {
@@ -386,7 +387,7 @@ export const socketConnection = async(server)=>{
         socket.on("rejectCall", async ({ call_id, caller_id }) => {
             const call = await findCallById(call_id);
             await updateCallStatusQuery(call_id, 'rejected')
-            const [ callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(caller_id, false)]) 
+            const [ callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(caller_id), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(call.callee_id), false), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(caller_id), false)]) 
             socket.to(caller_socket.socket_id).emit("callRejected", buildMsgForCall(call_id, caller_id, caller_socket.username, call.callee_id, callee_socket.username, `The person you are trying to reach, is currently unavailable!`));
         });
 
@@ -400,14 +401,14 @@ export const socketConnection = async(server)=>{
 
             if(call.start_time == null){
               await updateCallStatusQuery(call_id, 'canceled')
-              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(call.caller_id, false)]) 
+              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(call.callee_id), false), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(call.caller_id), false)]) 
               socket.emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
               socket.to(caller_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
               socket.to(callee_socket.socket_id).emit("endCall:off", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, 0));
             }else{
               const duration = (end_time - call.start_time) / 1000;
               await updateCallEndQuery(call_id, end_time, duration);
-              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(call.callee_id, false), findUserAndUpdateInCallStatusQuery(call.caller_id, false)]) 
+              const [callee_socket, caller_socket, callee_status, caller_status] = await Promise.all([userDataQuery(call.callee_id), userDataQuery(call.caller_id), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(call.callee_id), false), findUserAndUpdateInCallStatusQuery(new mongoose.Types.ObjectId(call.caller_id), false)]) 
               socket.emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
               socket.to(caller_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
               socket.to(callee_socket.socket_id).emit("callEnded", buildMsgForCallEnd(call_id, call.caller_id, caller_socket.username, call.callee_id, callee_socket.username, `Call is ended`, duration));
