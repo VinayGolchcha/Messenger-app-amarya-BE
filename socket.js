@@ -11,6 +11,7 @@ import { addGroupMessageQuery, findGroupDataQuery, getGroupDataQuery, getIsReadS
 import { logCallQuery,updateCallStatusQuery,updateCallEndQuery,findCallById, updateCallAnswerQuery, updateMissedCallStatusQuery} from "./v1/user/models/voiceQuery.js";
 import { fetchMediaDetailsQuery } from "./v1/user/models/mediaQuery.js";
 import { decryptMessages, encryptMessage } from "./v1/helpers/encryption.js";
+import { sendMail } from "./config/nodemailer.js";
 
 export const socketConnection = async(server)=>{
     const io = new Server(server, {
@@ -337,8 +338,9 @@ export const socketConnection = async(server)=>{
                     socket.on("calleePickedUp", () => {
                         clearTimeout(callTimeout);
                     });
-                  }else{
+                }else{
                   await updateMissedCallStatusQuery(call._id)
+                  await sendMail(callee_data.email, `Incoming call from ${caller_data.username} at ${call_initiated_time}. Unfortunately, the call was not attended to as you were offline at the time.`, `Missed Call from Messenger app`)
                   socket.emit("preInitiate:onn", buildMsgForCall(call._id, caller_id, caller_data.username, callee_id, callee_data.username, `The person you are trying to reach, is currently unavailable!`))
                 }
                 
