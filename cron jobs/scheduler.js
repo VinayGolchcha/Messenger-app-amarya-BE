@@ -5,13 +5,13 @@ import { checkAndUpdateIsReadStatus, sendNotifications } from "./cronFunctions.j
 
 export const runCronJobs = () => {
 
-    cron.schedule('*/5 * * * *', async () => {
-        try {
-            await sendNotifications()
-        } catch (error) {
-            console.error('Error executing cron sendNotifications:', error);
-        }
-    });
+    // cron.schedule('*/5 * * * *', async () => {
+    //     try {
+    //         await sendNotifications()
+    //     } catch (error) {
+    //         console.error('Error executing cron sendNotifications:', error);
+    //     }
+    // });
 
     // cron.schedule('* * * * *', async () => {
     //     try {
