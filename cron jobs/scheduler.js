@@ -1,6 +1,6 @@
 
 import cron from "node-cron";
-import { checkAndUpdateIsReadStatus, sendNotifications } from "./cronFunctions.js";
+// import { checkAndUpdateIsReadStatus, sendNotifications } from "./cronFunctions.js";
 
 
 export const runCronJobs = () => {
