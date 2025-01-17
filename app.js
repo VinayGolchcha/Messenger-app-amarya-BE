@@ -20,7 +20,7 @@ app.use(cookieParser());
 
 // CORS setup
 const corsOptions = {
-  origin: ['http://localhost:3000','https://messenger-app-amarya-fe.vercel.app', 'http://192.168.1.27', 'https://192.168.1.27'], // replace with your client URL
+  origin: ['http://localhost:3000','https://messenger-app-amarya-fe.vercel.app', 'http://192.168.1.27:3000', 'https://192.168.1.27:3000'], // replace with your client URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
